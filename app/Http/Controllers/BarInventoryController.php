@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\BarSale;
 use App\Models\NightSession;
 use App\Models\Product;
+use App\Models\ProductStockMovement;
 use App\Services\NightSessionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class BarInventoryController extends Controller
 {
@@ -28,7 +32,7 @@ class BarInventoryController extends Controller
             'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo' => 'Barra Subterráneo',
             default => in_array($rawBar, ['Barra Principal', 'Barra Subterráneo']) ? $rawBar : 'Barra Principal',
         };
-        $availableBars = ['Barra Principal', 'Barra Subterráneo'];
+        $availableBars = ['Barra Principal', 'Barra Subterráneo', 'Tienda'];
 
         $liquorSales = collect();
         $mixerSales = collect();
@@ -92,63 +96,134 @@ class BarInventoryController extends Controller
 
     public function updateBulk(Request $request)
     {
-        $sessionId = $request->input('night_session_id');
-        $session = NightSession::find($sessionId);
-        if ($session && !$session->isOpen()) {
+        $validated = $request->validate([
+            'night_session_id' => 'required|exists:night_sessions,id',
+            'bar_name' => [
+                'required',
+                Rule::in([
+                    'Barra Principal',
+                    'Barra Subterráneo',
+                    'Tienda',
+                    'Barra Kelly (Principal)',
+                    'Kelly',
+                    'Principal',
+                    'Barra Ariel (Subte)',
+                    'Ariel',
+                    'Subte',
+                    'Subterraneo',
+                    'Subterráneo',
+                ]),
+            ],
+            'inventory' => 'required|array|min:1',
+            'inventory.*.initial_packages' => 'nullable|integer|min:0',
+            'inventory.*.initial_units' => 'nullable|integer|min:0',
+            'inventory.*.added_packages' => 'nullable|integer|min:0',
+            'inventory.*.added_units' => 'nullable|integer|min:0',
+            'inventory.*.night_packages' => 'nullable|integer|min:0',
+            'inventory.*.night_units' => 'nullable|integer|min:0',
+        ]);
+
+        $sessionId = (int) $validated['night_session_id'];
+        $rawBar = $validated['bar_name'];
+        $selectedBar = match ($rawBar) {
+            'Barra Kelly (Principal)', 'Kelly', 'Principal' => 'Barra Principal',
+            'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo' => 'Barra Subterráneo',
+            default => $rawBar,
+        };
+
+        $session = NightSession::findOrFail($sessionId);
+        if (!$session->isOpen()) {
             return back()->with('error', 'La noche está cerrada. Para modificar aperturas o inventario, reabre la noche desde Cierre de Caja.');
         }
 
-        $rows = $request->input('inventory', []);
-        $rawBar = $request->input('bar_name', 'Barra Principal');
-        $selectedBar = match($rawBar) {
-            'Barra Kelly (Principal)', 'Kelly', 'Principal' => 'Barra Principal',
-            'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo' => 'Barra Subterráneo',
-            default => in_array($rawBar, ['Barra Principal', 'Barra Subterráneo']) ? $rawBar : 'Barra Principal',
-        };
-
-        foreach ($rows as $id => $data) {
-            $barSale = BarSale::with('product')->find($id);
-            if (!$barSale || !$barSale->product) continue;
-
-            $unitsPerPkg = $barSale->product->units_per_package > 0 ? (int)$barSale->product->units_per_package : 1;
-
-            $initPkg   = (int)($data['initial_packages'] ?? 0);
-            $initUnits = (int)($data['initial_units']   ?? 0);
-            $addPkg    = (int)($data['added_packages']  ?? 0);
-            $addUnits  = (int)($data['added_units']     ?? 0);
-            $nightPkg  = (int)($data['night_packages']  ?? 0);
-            $nightUnits= (int)($data['night_units']     ?? 0);
-
-            // Total Apertura (inicio de noche)
-            $apertPkg   = $initPkg + $addPkg;
-            $apertUnits = $initUnits + $addUnits;
-
-            // Total Noche (apertura + lo que se agregó durante el turno)
-            $totalNightPkg   = $apertPkg + $nightPkg;
-            $totalNightUnits = $apertUnits + $nightUnits;
-            $totalNightBot   = ($totalNightPkg * $unitsPerPkg) + $totalNightUnits;
-
-            // Guardar todos los campos de referencia y los totales de noche
-            $barSale->initial_packages = $initPkg;
-            $barSale->initial_units    = $initUnits;
-            $barSale->added_packages   = $addPkg;
-            $barSale->added_units      = $addUnits;
-            $barSale->night_packages   = $nightPkg;
-            $barSale->night_units      = $nightUnits;
-
-            // packages/units = Total Noche → lo que Ventas por Barra usa como base
-            $barSale->packages     = $totalNightPkg;
-            $barSale->units        = $totalNightUnits;
-            $barSale->total_initial = $totalNightBot;
-
-            // Ajustar vendido sin sobreescribir el saldo si ya fue editado
-            $barSale->vendido = max(0, $totalNightBot - (int)$barSale->saldo);
-            if ($barSale->product->category !== 'Mixers') {
-                $barSale->subtotal = $barSale->vendido * (float)$barSale->unit_price;
+        DB::transaction(function () use ($sessionId, $selectedBar, $validated): void {
+            $lockedSession = NightSession::query()->lockForUpdate()->findOrFail($sessionId);
+            if (!$lockedSession->isOpen()) {
+                throw ValidationException::withMessages([
+                    'night_session_id' => 'La noche está cerrada y no admite despachos.',
+                ]);
             }
 
-            $barSale->save();
-        }
+            foreach ($validated['inventory'] as $id => $data) {
+                $barSale = BarSale::query()
+                    ->where('night_session_id', $sessionId)
+                    ->where('bar_name', $selectedBar)
+                    ->whereKey($id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$barSale) {
+                    throw ValidationException::withMessages([
+                        "inventory.{$id}" => 'El producto no pertenece a esta noche y barra.',
+                    ]);
+                }
+
+                $product = Product::query()->lockForUpdate()->findOrFail($barSale->product_id);
+                $unitsPerPkg = max(1, (int) $product->units_per_package);
+
+                $initPkg = (int) ($data['initial_packages'] ?? 0);
+                $initUnits = (int) ($data['initial_units'] ?? 0);
+                $addPkg = (int) ($data['added_packages'] ?? 0);
+                $addUnits = (int) ($data['added_units'] ?? 0);
+                $nightPkg = (int) ($data['night_packages'] ?? 0);
+                $nightUnits = (int) ($data['night_units'] ?? 0);
+
+                $previousDispatch = ((int) $barSale->added_packages * $unitsPerPkg)
+                    + (int) $barSale->added_units;
+                $requestedDispatch = ($addPkg * $unitsPerPkg) + $addUnits;
+                $dispatchDifference = $requestedDispatch - $previousDispatch;
+                $stockBefore = (int) $product->stock_warehouse;
+
+                if ($dispatchDifference > $stockBefore) {
+                    throw ValidationException::withMessages([
+                        "inventory.{$id}.added_units" => 'El despacho supera el stock disponible en Bodega Central.',
+                    ]);
+                }
+
+                if ($dispatchDifference !== 0) {
+                    $stockAfter = $stockBefore - $dispatchDifference;
+                    $isDispatch = $dispatchDifference > 0;
+
+                    ProductStockMovement::create([
+                        'product_id' => $product->id,
+                        'movement_type' => 'transfer',
+                        'source' => $isDispatch ? 'Bodega Central' : $selectedBar,
+                        'destination' => $isDispatch ? $selectedBar : 'Bodega Central',
+                        'quantity' => -$dispatchDifference,
+                        'stock_before' => $stockBefore,
+                        'stock_after' => $stockAfter,
+                    ]);
+
+                    $product->stock_warehouse = $stockAfter;
+                    $product->stock_packages = intdiv($stockAfter, $unitsPerPkg);
+                    $product->stock_units = $stockAfter % $unitsPerPkg;
+                    $product->save();
+                }
+
+                $apertPkg = $initPkg + $addPkg;
+                $apertUnits = $initUnits + $addUnits;
+                $totalNightPkg = $apertPkg + $nightPkg;
+                $totalNightUnits = $apertUnits + $nightUnits;
+                $totalNightBot = ($totalNightPkg * $unitsPerPkg) + $totalNightUnits;
+
+                $barSale->initial_packages = $initPkg;
+                $barSale->initial_units = $initUnits;
+                $barSale->added_packages = $addPkg;
+                $barSale->added_units = $addUnits;
+                $barSale->night_packages = $nightPkg;
+                $barSale->night_units = $nightUnits;
+                $barSale->packages = $totalNightPkg;
+                $barSale->units = $totalNightUnits;
+                $barSale->total_initial = $totalNightBot;
+                $barSale->vendido = max(0, $totalNightBot - (int) $barSale->saldo);
+
+                if ($product->category !== 'Mixers') {
+                    $barSale->subtotal = $barSale->vendido * (float) $barSale->unit_price;
+                }
+
+                $barSale->save();
+            }
+        });
 
         return redirect()->route('barInventory.index', [
             'session_id' => $sessionId,

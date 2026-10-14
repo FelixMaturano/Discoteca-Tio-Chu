@@ -99,11 +99,25 @@ class QrPaymentController extends Controller
     {
         $validated = $request->validate([
             'night_session_id' => 'required|exists:night_sessions,id',
-            'point_of_sale' => 'nullable|string|in:Barra Principal,Tienda,Subte',
+            'point_of_sale' => 'required|string|in:Barra Principal,Tienda,Subte',
             'operator_name' => 'nullable|string|max:100',
-            'cobrante_name' => 'nullable|string|max:100',
+            'cobrante_name' => 'required_without:operator_name|nullable|string|max:100',
             'bank_app' => 'required|in:YASTA,YAPE',
-            'amount' => 'required|numeric|min:0.01',
+            'amount' => 'required|numeric|gt:0',
+            'reference_code' => 'required|string|max:255|unique:qr_payments,reference_code',
+        ], [
+            'night_session_id.required' => 'No se encontró la sesión nocturna seleccionada.',
+            'night_session_id.exists' => 'La sesión nocturna seleccionada no es válida.',
+            'point_of_sale.required' => 'Por favor selecciona el punto de venta (Barra Principal, Tienda o Subterráneo).',
+            'point_of_sale.in' => 'Selecciona un punto de venta válido.',
+            'bank_app.required' => 'Por favor selecciona el método de pago (Yasta o Yape).',
+            'bank_app.in' => 'Selecciona una aplicación de pago válida (Yasta o Yape).',
+            'cobrante_name.required_without' => 'Por favor selecciona al mesero o cobrante de la lista.',
+            'amount.required' => 'Debe ingresar el monto cobrado.',
+            'amount.numeric' => 'El monto cobrado debe ser un valor numérico.',
+            'amount.gt' => 'El monto cobrado debe ser mayor a 0.',
+            'reference_code.required' => 'Debe ingresar el identificador del comprobante.',
+            'reference_code.unique' => 'Ya existe un cobro registrado con este comprobante.',
         ]);
 
         $session = NightSession::findOrFail($validated['night_session_id']);
@@ -124,7 +138,7 @@ class QrPaymentController extends Controller
             'operator_name' => $cobrante,
             'bank_app' => $validated['bank_app'],
             'amount' => $validated['amount'],
-            'reference_code' => null, // Removido por requerimiento expreso
+            'reference_code' => $validated['reference_code'],
             'is_confirmed' => true,
         ]);
 

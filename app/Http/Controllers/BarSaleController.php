@@ -677,8 +677,12 @@ class BarSaleController extends Controller
         $previouslySynced = (int) $barSale->stock_synced_vendido;
         $currentSold = max(0, (int) $barSale->vendido);
         $difference = $currentSold - $previouslySynced;
+        $unitsPerPackage = max(1, (int) ($barSale->product->units_per_package ?? 1));
+        $openingStock = (((int) $barSale->initial_packages + (int) $barSale->added_packages) * $unitsPerPackage)
+            + (int) $barSale->initial_units
+            + (int) $barSale->added_units;
 
-        if ($difference !== 0) {
+        if ($difference !== 0 && $openingStock === 0) {
             $product = $barSale->product;
             $product->stock_warehouse = max(0, (int) $product->stock_warehouse - $difference);
             $unitsPerPackage = max(1, (int) $product->units_per_package);

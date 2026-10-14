@@ -39,6 +39,11 @@ class Product extends Model
         return $this->hasMany(BarSale::class);
     }
 
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(ProductStockMovement::class);
+    }
+
     /**
      * Descuenta stock directamente de Bodega Central (nunca baja de 0)
      */
