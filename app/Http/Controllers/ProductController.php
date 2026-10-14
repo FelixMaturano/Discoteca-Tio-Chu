@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\BarSale;
 use App\Models\Product;
+use App\Models\ProductStockMovement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -184,25 +187,57 @@ class ProductController extends Controller
             'stock' => 'nullable|integer|min:0',
             'stock_packages' => 'nullable|integer|min:0',
             'stock_units' => 'nullable|integer|min:0',
+            'movement_type' => 'nullable|in:adjustment,merma',
         ]);
 
-        if (isset($validated['stock_packages']) || isset($validated['stock_units'])) {
-            $unitsPerPackage = max(1, (int) $product->units_per_package);
-            $packages = max(0, (int)($validated['stock_packages'] ?? $product->stock_packages));
-            $units = max(0, (int)($validated['stock_units'] ?? $product->stock_units));
-            $packages += intdiv($units, $unitsPerPackage);
-            $units %= $unitsPerPackage;
-            $product->stock_packages = $packages;
-            $product->stock_units = $units;
-            $product->stock_warehouse = ($packages * $unitsPerPackage) + $units;
-        } elseif (isset($validated['delta'])) {
-            $product->stock_warehouse = max(0, (int)$product->stock_warehouse + (int)$validated['delta']);
-        } elseif (isset($validated['stock'])) {
-            $product->stock_warehouse = max(0, (int)$validated['stock']);
-        }
+        $product = DB::transaction(function () use ($product, $validated): Product {
+            $lockedProduct = Product::query()->lockForUpdate()->findOrFail($product->id);
+            $stockBefore = (int) $lockedProduct->stock_warehouse;
+            $stockAfter = $stockBefore;
 
-        $this->syncStockBreakdown($product);
-        $product->save();
+            if (isset($validated['stock_packages']) || isset($validated['stock_units'])) {
+                $unitsPerPackage = max(1, (int) $lockedProduct->units_per_package);
+                $packages = max(0, (int) ($validated['stock_packages'] ?? $lockedProduct->stock_packages));
+                $units = max(0, (int) ($validated['stock_units'] ?? $lockedProduct->stock_units));
+                $packages += intdiv($units, $unitsPerPackage);
+                $units %= $unitsPerPackage;
+                $stockAfter = ($packages * $unitsPerPackage) + $units;
+            } elseif (isset($validated['delta'])) {
+                $stockAfter = $stockBefore + (int) $validated['delta'];
+            } elseif (isset($validated['stock'])) {
+                $stockAfter = (int) $validated['stock'];
+            }
+
+            if ($stockAfter < 0) {
+                throw ValidationException::withMessages([
+                    'delta' => 'El stock de bodega no puede ser negativo.',
+                ]);
+            }
+
+            $quantity = $stockAfter - $stockBefore;
+            $movementType = $validated['movement_type'] ?? 'adjustment';
+            if ($movementType === 'merma' && $quantity >= 0) {
+                throw ValidationException::withMessages([
+                    'movement_type' => 'Una merma debe reducir el stock.',
+                ]);
+            }
+
+            if ($quantity !== 0) {
+                ProductStockMovement::create([
+                    'product_id' => $lockedProduct->id,
+                    'movement_type' => $movementType,
+                    'quantity' => $quantity,
+                    'stock_before' => $stockBefore,
+                    'stock_after' => $stockAfter,
+                ]);
+            }
+
+            $lockedProduct->stock_warehouse = $stockAfter;
+            $this->syncStockBreakdown($lockedProduct);
+            $lockedProduct->save();
+
+            return $lockedProduct;
+        });
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
