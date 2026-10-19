@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Invoice;
 use App\Models\NightSession;
-use App\Models\Staff;
+use App\Models\QrPayment;
 use App\Models\StaffAttendance;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,7 +62,7 @@ class StaffPaymentAndHistoryTest extends TestCase
                 'limpieza' => 105.00,
                 'seguridades' => 135.00,
                 'barra' => 125.00,
-            ]
+            ],
         ]);
 
         $response->assertSessionHas('success');
@@ -73,7 +74,7 @@ class StaffPaymentAndHistoryTest extends TestCase
             })->first();
 
         $this->assertNotNull($securityAttendance);
-        $this->assertEquals(135.00, (float)$securityAttendance->pay_amount);
+        $this->assertEquals(135.00, (float) $securityAttendance->pay_amount);
 
         // Verificar que los bartenders ahora tengan 125.00 en esta noche
         $barAttendance = StaffAttendance::where('night_session_id', $session->id)
@@ -82,7 +83,7 @@ class StaffPaymentAndHistoryTest extends TestCase
             })->first();
 
         $this->assertNotNull($barAttendance);
-        $this->assertEquals(125.00, (float)$barAttendance->pay_amount);
+        $this->assertEquals(125.00, (float) $barAttendance->pay_amount);
     }
 
     public function test_can_pay_single_unpaid_worker_from_history(): void
@@ -95,7 +96,7 @@ class StaffPaymentAndHistoryTest extends TestCase
         $response->assertSessionHas('success');
 
         $att->refresh();
-        $this->assertTrue((bool)$att->is_paid);
+        $this->assertTrue((bool) $att->is_paid);
     }
 
     public function test_can_register_invoice_with_selected_bar(): void
@@ -122,7 +123,7 @@ class StaffPaymentAndHistoryTest extends TestCase
     public function test_invoice_automatically_increments_correlative(): void
     {
         $session = NightSession::first();
-        $initialMax = (int) (\App\Models\Invoice::where('night_session_id', $session->id)->max('correlative_num') ?? 0);
+        $initialMax = (int) (Invoice::where('night_session_id', $session->id)->max('correlative_num') ?? 0);
 
         $response = $this->actingAs($this->user)->post(route('invoices.store'), [
             'night_session_id' => $session->id,
@@ -142,7 +143,7 @@ class StaffPaymentAndHistoryTest extends TestCase
     public function test_can_delete_invoice_asynchronously(): void
     {
         $session = NightSession::first();
-        $inv = \App\Models\Invoice::create([
+        $inv = Invoice::create([
             'night_session_id' => $session->id,
             'correlative_num' => 99,
             'payment_method' => 'tarjeta',
@@ -178,7 +179,7 @@ class StaffPaymentAndHistoryTest extends TestCase
     public function test_can_delete_qr_payment_asynchronously(): void
     {
         $session = NightSession::first();
-        $qr = \App\Models\QrPayment::create([
+        $qr = QrPayment::create([
             'night_session_id' => $session->id,
             'point_of_sale' => 'Barra Principal',
             'operator_name' => 'ALVARO',

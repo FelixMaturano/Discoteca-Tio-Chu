@@ -26,7 +26,7 @@ class StaffController extends Controller
         $sessionDayNorm = $sessionDayRaw ? $this->normalizeDay($sessionDayRaw) : null;
 
         // Determinar si la noche activa es un día extraordinario (no es viernes, sabado, domingo)
-        $isExtraDay = $sessionDayNorm && !in_array($sessionDayNorm, ['viernes', 'sabado', 'domingo']);
+        $isExtraDay = $sessionDayNorm && ! in_array($sessionDayNorm, ['viernes', 'sabado', 'domingo']);
 
         // Si el usuario especificó ?day=..., usarlo. Si no, usar el día de la noche activa si existe; sino 'viernes'
         if ($request->has('day')) {
@@ -47,28 +47,28 @@ class StaffController extends Controller
                 $attendances = StaffAttendance::with('staff')
                     ->where('night_session_id', $activeSession->id)
                     ->get();
-                $staffMembers = $attendances->map(fn($att) => $att->staff)->filter()->values();
+                $staffMembers = $attendances->map(fn ($att) => $att->staff)->filter()->values();
             } else {
                 $staffMembers = collect();
             }
         } elseif ($currentDay === 'viernes') {
             if ($activeSession && $this->normalizeDay($activeSession->day_name) === 'viernes' && $activeSession->staffAttendances()->exists()) {
                 $attendances = StaffAttendance::with('staff')->where('night_session_id', $activeSession->id)->get();
-                $staffMembers = $attendances->map(fn($att) => $att->staff)->filter()->values();
+                $staffMembers = $attendances->map(fn ($att) => $att->staff)->filter()->values();
             } else {
                 $staffMembers = Staff::where('is_active', true)->where('works_friday', true)->get();
             }
         } elseif ($currentDay === 'sabado') {
             if ($activeSession && $this->normalizeDay($activeSession->day_name) === 'sabado' && $activeSession->staffAttendances()->exists()) {
                 $attendances = StaffAttendance::with('staff')->where('night_session_id', $activeSession->id)->get();
-                $staffMembers = $attendances->map(fn($att) => $att->staff)->filter()->values();
+                $staffMembers = $attendances->map(fn ($att) => $att->staff)->filter()->values();
             } else {
                 $staffMembers = Staff::where('is_active', true)->where('works_saturday', true)->get();
             }
         } elseif ($currentDay === 'domingo') {
             if ($activeSession && $this->normalizeDay($activeSession->day_name) === 'domingo' && $activeSession->staffAttendances()->exists()) {
                 $attendances = StaffAttendance::with('staff')->where('night_session_id', $activeSession->id)->get();
-                $staffMembers = $attendances->map(fn($att) => $att->staff)->filter()->values();
+                $staffMembers = $attendances->map(fn ($att) => $att->staff)->filter()->values();
             } else {
                 $staffMembers = Staff::where('is_active', true)->where('works_sunday', true)->get();
             }
@@ -79,12 +79,13 @@ class StaffController extends Controller
 
         // Orden estricto oficial de Don Ludo:
         // 1. Seguridad, 2. Barra, 3. Mozos, 4. Limpieza (y alfabético por nombre)
-        $staffMembers = $staffMembers->sort(function ($a, $b) {
+        $staffMembers = $staffMembers->sort(function (Staff $a, Staff $b) {
             $rankA = $a->getRoleCategoryRank();
             $rankB = $b->getRoleCategoryRank();
             if ($rankA === $rankB) {
                 return strcasecmp($a->name, $b->name);
             }
+
             return $rankA <=> $rankB;
         })->values();
 
@@ -111,17 +112,18 @@ class StaffController extends Controller
         // Lista completa de todo el personal activo ordenado por rol para el modal de turno
         $allActiveStaff = Staff::where('is_active', true)
             ->get()
-            ->sort(function ($a, $b) {
+            ->sort(function (Staff $a, Staff $b) {
                 $rankA = $a->getRoleCategoryRank();
                 $rankB = $b->getRoleCategoryRank();
                 if ($rankA === $rankB) {
                     return strcasecmp($a->name, $b->name);
                 }
+
                 return $rankA <=> $rankB;
             })->values();
 
-        $currentSessionStaffIds = $activeSession 
-            ? StaffAttendance::where('night_session_id', $activeSession->id)->pluck('staff_id')->toArray() 
+        $currentSessionStaffIds = $activeSession
+            ? StaffAttendance::where('night_session_id', $activeSession->id)->pluck('staff_id')->toArray()
             : [];
 
         return view('staff.index', compact(
@@ -153,14 +155,14 @@ class StaffController extends Controller
         ]);
 
         $session = NightSession::findOrFail($validated['session_id']);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No se pueden modificar turnos en una noche cerrada.'
+                'message' => 'No se pueden modificar turnos en una noche cerrada.',
             ], 422);
         }
 
-        $selectedIds = collect($validated['staff_ids'] ?? [])->map(fn($id) => (int)$id)->all();
+        $selectedIds = collect($validated['staff_ids'] ?? [])->map(fn ($id) => (int) $id)->all();
 
         // Eliminar del turno a los desmarcados (solo si no están pagados aún)
         StaffAttendance::where('night_session_id', $session->id)
@@ -204,6 +206,7 @@ class StaffController extends Controller
     private function normalizeDay(string $day): string
     {
         $day = mb_strtolower(trim($day));
+
         return str_replace(
             ['á', 'é', 'í', 'ó', 'ú', 'ñ'],
             ['a', 'e', 'i', 'o', 'u', 'n'],
@@ -220,7 +223,7 @@ class StaffController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'role' => 'required|string|max:100',
+            'role' => 'required|in:MESERO,BARTENDER,SEGURIDAD,LIMPIEZA',
             'default_pay' => 'required|numeric|min:0',
             'assigned_bar' => 'nullable|string|max:100',
             'phone' => 'nullable|string|max:50',
@@ -247,7 +250,7 @@ class StaffController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'role' => 'required|string|max:100',
+            'role' => 'required|in:MESERO,BARTENDER,SEGURIDAD,LIMPIEZA',
             'default_pay' => 'required|numeric|min:0',
             'assigned_bar' => 'nullable|string|max:100',
             'phone' => 'nullable|string|max:50',
@@ -269,6 +272,7 @@ class StaffController extends Controller
     public function destroy(Staff $staff)
     {
         $staff->delete();
+
         return redirect()->route('staff.index');
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductStockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
@@ -31,8 +32,8 @@ class ProductController extends Controller
                 if ($file !== '.' && $file !== '..' && in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg', 'webp'])) {
                     $drinkImages[] = [
                         'filename' => $file,
-                        'path' => 'images/drinks/' . $file,
-                        'url' => asset('images/drinks/' . $file),
+                        'path' => 'images/drinks/'.$file,
+                        'url' => asset('images/drinks/'.$file),
                     ];
                 }
             }
@@ -62,9 +63,9 @@ class ProductController extends Controller
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+            $filename = time().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
             $file->move(public_path('images/drinks'), $filename);
-            $validated['image_path'] = 'images/drinks/' . $filename;
+            $validated['image_path'] = 'images/drinks/'.$filename;
         }
 
         unset($validated['image']);
@@ -84,7 +85,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         if ($request->wantsJson() || $request->ajax() || $request->has('_ajax')) {
-            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'category' => 'required|string|max:100',
                 'sale_price' => 'required|numeric|min:0',
@@ -123,9 +124,9 @@ class ProductController extends Controller
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+            $filename = time().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
             $file->move(public_path('images/drinks'), $filename);
-            $validated['image_path'] = 'images/drinks/' . $filename;
+            $validated['image_path'] = 'images/drinks/'.$filename;
         }
 
         unset($validated['image']);
@@ -147,19 +148,19 @@ class ProductController extends Controller
         if ($request->wantsJson() || $request->ajax() || $request->has('_ajax')) {
             return response()->json([
                 'success' => true,
-                'message' => 'Bebida "' . $product->name . '" actualizada correctamente.',
+                'message' => 'Bebida "'.$product->name.'" actualizada correctamente.',
                 'product' => [
                     'id' => $product->id,
                     'name' => $product->name,
                     'category' => $product->category,
-                    'sale_price' => (float)$product->sale_price,
-                    'cost_price' => (float)($product->cost_price ?? 0),
+                    'sale_price' => (float) $product->sale_price,
+                    'cost_price' => (float) ($product->cost_price ?? 0),
                     'unit' => $product->unit,
-                    'units_per_package' => (int)$product->units_per_package,
-                    'stock_warehouse' => (int)$product->stock_warehouse,
-                    'stock_packages' => (int)$product->stock_packages,
-                    'stock_units' => (int)$product->stock_units,
-                    'is_active' => (bool)$product->is_active,
+                    'units_per_package' => (int) $product->units_per_package,
+                    'stock_warehouse' => (int) $product->stock_warehouse,
+                    'stock_packages' => (int) $product->stock_packages,
+                    'stock_units' => (int) $product->stock_units,
+                    'is_active' => (bool) $product->is_active,
                     'image_url' => $product->image_url,
                 ],
             ]);
@@ -174,6 +175,7 @@ class ProductController extends Controller
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Producto eliminado correctamente.']);
         }
+
         return redirect()->route('products.index')->with('success', 'Producto eliminado.');
     }
 
@@ -247,11 +249,11 @@ class ProductController extends Controller
                 'stock_packages' => $product->stock_packages,
                 'stock_units' => $product->stock_units,
                 'status' => $product->stock_warehouse > 10 ? 'in_stock' : ($product->stock_warehouse > 0 ? 'low_stock' : 'out_of_stock'),
-                'message' => 'Stock de ' . $product->name . ' actualizado a ' . $product->stock_warehouse . '.',
+                'message' => 'Stock de '.$product->name.' actualizado a '.$product->stock_warehouse.'.',
             ]);
         }
 
-        return back()->with('success', 'Stock actualizado a ' . $product->stock_warehouse . '.');
+        return back()->with('success', 'Stock actualizado a '.$product->stock_warehouse.'.');
     }
 
     private function syncStockBreakdown(Product $product): void

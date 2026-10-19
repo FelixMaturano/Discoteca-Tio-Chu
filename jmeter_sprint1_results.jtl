@@ -1,0 +1,76 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1792429933525,1328,Autenticacion - GET login y token CSRF,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,21251,202,3,3,http://127.0.0.1:8000/login,1317,0,51
+1792429933525,1677,Autenticacion - GET login y token CSRF,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,21251,202,4,4,http://127.0.0.1:8000/login,1673,0,51
+1792429934167,1375,Autenticacion - GET login y token CSRF,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,21251,202,4,4,http://127.0.0.1:8000/login,1371,0,3
+1792429934864,1427,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1724,1095,5,5,http://127.0.0.1:8000/login,1422,0,3
+1792429935176,1433,Autenticacion - GET login y token CSRF,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,21251,202,5,5,http://127.0.0.1:8000/login,1429,0,1
+1792429935206,2062,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1724,1095,5,5,http://127.0.0.1:8000/login,2058,0,1
+1792429935544,2417,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1724,1095,5,5,http://127.0.0.1:8000/login,2412,0,1
+1792429936163,2140,Autenticacion - GET login y token CSRF,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,21251,202,5,5,http://127.0.0.1:8000/login,2137,0,0
+1792429936292,2357,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1194,5,5,http://127.0.0.1:8000/sessions,2352,0,1
+1792429936612,2714,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1724,1095,5,5,http://127.0.0.1:8000/login,2711,0,1
+1792429937269,2419,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1194,5,5,http://127.0.0.1:8000/sessions,2414,0,1
+1792429937963,2079,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1194,5,5,http://127.0.0.1:8000/sessions,2075,0,1
+1792429938306,2390,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1724,1095,5,5,http://127.0.0.1:8000/login,2386,0,1
+1792429938651,2399,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1075,5,5,http://127.0.0.1:8000/products/1/quick-stock,2395,0,1
+1792429939328,2045,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1194,5,5,http://127.0.0.1:8000/sessions,2040,0,1
+1792429939690,2050,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1075,5,5,http://127.0.0.1:8000/products/1/quick-stock,2046,0,1
+1792429940043,2065,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1075,5,5,http://127.0.0.1:8000/products/1/quick-stock,2061,0,2
+1792429940698,1759,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1214,1194,5,5,http://127.0.0.1:8000/sessions,1754,0,1
+1792429941052,1734,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1450,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1730,0,0
+1792429941375,1736,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1075,5,5,http://127.0.0.1:8000/products/1/quick-stock,1733,0,0
+1792429941741,1930,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1450,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1926,0,1
+1792429942110,1918,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1450,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1914,0,1
+1792429942458,1923,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1214,1075,5,5,http://127.0.0.1:8000/products/1/quick-stock,1919,0,1
+1792429942787,2039,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,2033,0,0
+1792429943112,2068,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1450,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,2064,0,1
+1792429943671,1922,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,1917,0,1
+1792429944028,1978,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,1973,0,0
+1792429944382,1948,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1214,1450,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1944,0,1
+1792429944827,1852,H15 - POST alta de personal (una vez por hilo),302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1301,5,5,http://127.0.0.1:8000/staff,1848,0,25
+1792429945181,1908,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,1904,0,1
+1792429945595,1836,H15 - POST alta de personal (una vez por hilo),302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1301,5,5,http://127.0.0.1:8000/staff,1832,0,1
+1792429946008,1749,H15 - POST alta de personal (una vez por hilo),302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1301,5,5,http://127.0.0.1:8000/staff,1745,0,1
+1792429946331,1810,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,1806,0,1
+1792429946681,1820,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,1816,0,1
+1792429947091,1755,H15 - POST alta de personal (una vez por hilo),302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1301,5,5,http://127.0.0.1:8000/staff,1751,0,1
+1792429947433,1753,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,1749,0,0
+1792429947758,1760,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,1756,0,1
+1792429948143,1729,H15 - POST alta de personal (una vez por hilo),302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1214,1301,5,5,http://127.0.0.1:8000/staff,1723,0,1
+1792429948503,1743,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1079,5,5,http://127.0.0.1:8000/login,1733,0,1
+1792429948847,1732,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,1727,0,2
+1792429949187,1750,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1079,5,5,http://127.0.0.1:8000/login,1739,0,1
+1792429949519,1773,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1079,5,5,http://127.0.0.1:8000/login,1761,0,1
+1792429949874,1782,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,1777,0,1
+1792429950252,1741,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1162,5,5,http://127.0.0.1:8000/sessions,1735,0,1
+1792429950580,1758,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1079,5,5,http://127.0.0.1:8000/login,1748,0,1
+1792429950939,1794,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1162,5,5,http://127.0.0.1:8000/sessions,1789,0,1
+1792429951294,1817,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1162,5,5,http://127.0.0.1:8000/sessions,1813,0,1
+1792429951657,1799,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1214,1079,5,5,http://127.0.0.1:8000/login,1789,0,1
+1792429951994,1809,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1059,5,5,http://127.0.0.1:8000/products/1/quick-stock,1806,0,1
+1792429952339,1856,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1162,5,5,http://127.0.0.1:8000/sessions,1852,0,1
+1792429952734,1892,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1059,5,5,http://127.0.0.1:8000/products/1/quick-stock,1886,0,1
+1792429953113,1895,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1059,5,5,http://127.0.0.1:8000/products/1/quick-stock,1889,0,1
+1792429953458,1876,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1214,1162,5,5,http://127.0.0.1:8000/sessions,1871,0,1
+1792429953806,1874,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1418,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1871,0,1
+1792429954196,1859,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1059,5,5,http://127.0.0.1:8000/products/1/quick-stock,1855,0,1
+1792429954627,1771,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1418,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1767,0,1
+1792429955009,1709,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1418,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1705,0,1
+1792429955335,1745,H11 - PATCH ajuste AJAX de stock,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1214,1059,5,5,http://127.0.0.1:8000/products/1/quick-stock,1741,0,1
+1792429955681,1777,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,1771,0,1
+1792429956056,1749,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1418,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1745,0,1
+1792429956399,1869,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,1863,0,1
+1792429956720,1985,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,1980,0,1
+1792429957081,1984,H12 - POST despacho de stock a Barra Principal,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1214,1418,5,5,http://127.0.0.1:8000/bar-inventory/bulk-update,1980,0,1
+1792429957461,1939,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,1934,0,0
+1792429957807,2032,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,2026,0,1
+1792429958270,2007,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,2003,0,1
+1792429958708,1923,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,1920,0,0
+1792429959068,2074,H15 - GET consulta de nomina,200,OK,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,345301,935,5,5,http://127.0.0.1:8000/staff,2069,0,1
+1792429959402,2104,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1079,5,5,http://127.0.0.1:8000/login,2092,0,2
+1792429959841,2028,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1676,935,5,5,http://127.0.0.1:8000/login,2024,0,0
+1792429960278,1952,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-1,text,true,,1214,1079,5,5,http://127.0.0.1:8000/login,1941,0,1
+1792429960633,1974,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-3,text,true,,1214,1079,4,4,http://127.0.0.1:8000/login,1963,0,1
+1792429961144,1828,Autenticacion - GET login y token CSRF,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-5,text,true,,1676,935,3,3,http://127.0.0.1:8000/login,1824,0,1
+1792429961507,1873,H2 - POST apertura de sesion,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-2,text,true,,1214,1162,2,2,http://127.0.0.1:8000/sessions,1868,0,1
+1792429961871,1879,Autenticacion - POST login administrador,302,Found,Sprint 1 - 5 usuarios concurrentes (30 s) 1-4,text,true,,1214,1079,1,1,http://127.0.0.1:8000/login,1868,0,1

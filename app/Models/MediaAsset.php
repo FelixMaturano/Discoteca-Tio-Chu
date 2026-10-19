@@ -32,7 +32,8 @@ class MediaAsset extends Model
     public function getUrlAttribute(): string
     {
         $version = $this->updated_at ? $this->updated_at->timestamp : time();
-        return asset($this->path) . '?v=' . $version;
+
+        return asset($this->path).'?v='.$version;
     }
 
     /**
@@ -40,15 +41,15 @@ class MediaAsset extends Model
      */
     public function getFormattedSizeAttribute(): string
     {
-        if (!$this->file_size) {
+        if (! $this->file_size) {
             return '—';
         }
 
         if ($this->file_size >= 1048576) {
-            return number_format($this->file_size / 1048576, 1) . ' MB';
+            return number_format($this->file_size / 1048576, 1).' MB';
         }
 
-        return round($this->file_size / 1024) . ' KB';
+        return round($this->file_size / 1024).' KB';
     }
 
     /**

@@ -48,20 +48,20 @@ class QrPaymentController extends Controller
                 $pos = $p->point_of_sale;
                 if ($pos === 'Barra Subte') {
                     $pos = 'Subte';
-                } elseif (!in_array($pos, $pointsOfSale)) {
+                } elseif (! in_array($pos, $pointsOfSale)) {
                     $pos = 'Barra Principal';
                 }
 
                 $paymentsByPos[$pos]->push($p);
 
                 if ($p->bank_app === 'YASTA') {
-                    $totalsByPos[$pos]['yasta'] += (float)$p->amount;
-                    $totalYasta += (float)$p->amount;
+                    $totalsByPos[$pos]['yasta'] += (float) $p->amount;
+                    $totalYasta += (float) $p->amount;
                 } else {
-                    $totalsByPos[$pos]['yape'] += (float)$p->amount;
-                    $totalYape += (float)$p->amount;
+                    $totalsByPos[$pos]['yape'] += (float) $p->amount;
+                    $totalYape += (float) $p->amount;
                 }
-                $totalsByPos[$pos]['total'] += (float)$p->amount;
+                $totalsByPos[$pos]['total'] += (float) $p->amount;
             }
 
             $totalGeneral = $totalYasta + $totalYape;
@@ -72,10 +72,10 @@ class QrPaymentController extends Controller
         $cobrantesStaff = Staff::where('is_active', true)
             ->where(function ($q) {
                 $q->where('role', 'like', '%mesero%')
-                  ->orWhere('role', 'like', '%mozo%')
-                  ->orWhere('role', 'like', '%refuerzo%')
-                  ->orWhere('role', 'like', '%bartender%')
-                  ->orWhere('role', 'like', '%barra%');
+                    ->orWhere('role', 'like', '%mozo%')
+                    ->orWhere('role', 'like', '%refuerzo%')
+                    ->orWhere('role', 'like', '%bartender%')
+                    ->orWhere('role', 'like', '%barra%');
             })
             ->where('role', 'not like', '%limpieza%')
             ->where('role', 'not like', '%seguridad%')
@@ -121,7 +121,7 @@ class QrPaymentController extends Controller
         ]);
 
         $session = NightSession::findOrFail($validated['night_session_id']);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return back()->with('error', 'No se pueden registrar cobros QR en una noche cerrada.');
         }
 
@@ -144,16 +144,17 @@ class QrPaymentController extends Controller
 
         $this->sessionService->recalculateClosing($session);
 
-        return back()->with('success', 'Pago QR registrado en ' . $pointOfSale . '.');
+        return back()->with('success', 'Pago QR registrado en '.$pointOfSale.'.');
     }
 
     public function destroy(Request $request, QrPayment $qr)
     {
         $session = $qr->nightSession;
-        if ($session && !$session->isOpen()) {
+        if ($session && ! $session->isOpen()) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'No se pueden anular cobros QR de una noche cerrada.'], 403);
             }
+
             return back()->with('error', 'No se pueden anular cobros QR de una noche cerrada.');
         }
 

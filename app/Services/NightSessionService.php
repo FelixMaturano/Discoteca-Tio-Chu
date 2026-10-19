@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CashClosing;
 use App\Models\NightSession;
+use Carbon\Carbon;
 
 class NightSessionService
 {
@@ -16,6 +17,7 @@ class NightSessionService
             $session = NightSession::find($sessionId);
             if ($session) {
                 session(['active_night_session_id' => $session->id]);
+
                 return $session;
             }
         }
@@ -47,14 +49,14 @@ class NightSessionService
         $cardInvoices = $session->invoices()->where('payment_method', 'tarjeta')->get();
         $cashInvoices = $session->invoices()->where('payment_method', 'efectivo')->get();
 
-        $totalCard           = $cardInvoices->sum('amount');
+        $totalCard = $cardInvoices->sum('amount');
         $totalCardCommission = $cardInvoices->sum('commission_amount');
-        $totalCardNet        = $cardInvoices->sum('net_amount');
-        $totalCashInvoices   = $cashInvoices->sum('amount');
+        $totalCardNet = $cardInvoices->sum('net_amount');
+        $totalCashInvoices = $cashInvoices->sum('amount');
 
         // Pagos QR globales
         $totalQrYasta = (float) $session->qrPayments()->where('bank_app', 'YASTA')->sum('amount');
-        $totalQrYape  = (float) $session->qrPayments()->where('bank_app', 'YAPE')->sum('amount');
+        $totalQrYape = (float) $session->qrPayments()->where('bank_app', 'YAPE')->sum('amount');
 
         // 1. Efectivo en Barra Principal: Ventas - QR - Tarjeta bruto
         $salesPrincipal = (float) $session->barSales()->whereIn('bar_name', ['Barra Principal', 'Barra Kelly (Principal)', 'Principal', 'Kelly'])->sum('subtotal');
@@ -88,8 +90,8 @@ class NightSessionService
         $totalExpenses = (float) $session->expenses()->sum('amount');
 
         // Ingresos extras de Tienda (Guardarropa y Snacks) — se mantienen guardados pero no se suman al cuadre
-        $totalGuardarropa = (float)($closing->total_guardarropa ?? 0);
-        $totalSnacks      = (float)($closing->total_snacks ?? 0);
+        $totalGuardarropa = (float) ($closing->total_guardarropa ?? 0);
+        $totalSnacks = (float) ($closing->total_snacks ?? 0);
 
         // Total Ingresos = Tarjeta bruto + QR YASTA + QR YAPE + Efectivo Barras
         $totalIngresos = $totalCard + $totalQrYasta + $totalQrYape + $totalEfectivo;
@@ -101,18 +103,18 @@ class NightSessionService
         $netCashClosing = $totalIngresos - $totalEgresos;
 
         $closing->update([
-            'total_card'            => $totalCard,
+            'total_card' => $totalCard,
             'total_card_commission' => $totalCardCommission,
-            'total_card_net'        => $totalCardNet,
-            'total_cash_invoices'   => $totalEfectivo,  // reutilizamos este campo para el efectivo calculado
-            'total_qr_yasta'        => $totalQrYasta,
-            'total_qr_yape'         => $totalQrYape,
-            'total_bar_sales'       => $totalBarSales,
-            'total_guardarropa'     => $totalGuardarropa,
-            'total_snacks'          => $totalSnacks,
-            'total_staff_paid'      => $totalStaffPaid,
-            'total_expenses'        => $totalExpenses,
-            'net_cash_closing'      => $netCashClosing,
+            'total_card_net' => $totalCardNet,
+            'total_cash_invoices' => $totalEfectivo,  // reutilizamos este campo para el efectivo calculado
+            'total_qr_yasta' => $totalQrYasta,
+            'total_qr_yape' => $totalQrYape,
+            'total_bar_sales' => $totalBarSales,
+            'total_guardarropa' => $totalGuardarropa,
+            'total_snacks' => $totalSnacks,
+            'total_staff_paid' => $totalStaffPaid,
+            'total_expenses' => $totalExpenses,
+            'net_cash_closing' => $netCashClosing,
         ]);
 
         return $closing;
@@ -121,7 +123,7 @@ class NightSessionService
     /**
      * Genera el consolidado financiero de múltiples noches (ej: Fin de semana Vie-Sáb-Dom)
      *
-     * @param array<int> $sessionIds
+     * @param  array<int>  $sessionIds
      * @return array<string, mixed>
      */
     public function getConsolidatedSummary(array $sessionIds): array
@@ -202,9 +204,9 @@ class NightSessionService
             $sPrincipalCash = max(0, $sPrincipalSales - $sPrincipalQr - $sPrincipalCard);
 
             $principalVentas += $sPrincipalSales;
-            $principalQr     += $sPrincipalQr;
-            $principalCard   += $sPrincipalCard;
-            $principalCash   += $sPrincipalCash;
+            $principalQr += $sPrincipalQr;
+            $principalCard += $sPrincipalCard;
+            $principalCash += $sPrincipalCash;
 
             // 2. Desglose Barra Subterráneo
             $sSubteSales = (float) $session->barSales()->whereIn('bar_name', ['Barra Subterráneo', 'Barra Ariel (Subte)', 'Subterráneo', 'Subterraneo', 'Subte', 'Ariel'])->sum('subtotal');
@@ -213,9 +215,9 @@ class NightSessionService
             $sSubteCash = max(0, $sSubteSales - $sSubteQr - $sSubteCard);
 
             $subteVentas += $sSubteSales;
-            $subteQr     += $sSubteQr;
-            $subteCard   += $sSubteCard;
-            $subteCash   += $sSubteCash;
+            $subteQr += $sSubteQr;
+            $subteCard += $sSubteCard;
+            $subteCash += $sSubteCash;
 
             // 3. Desglose Tienda
             $sTiendaStore = (float) $session->storeSales()->sum('total_price');
@@ -226,23 +228,23 @@ class NightSessionService
             $sTiendaCash = max(0, $sTiendaSales - $sTiendaQr - $sTiendaCard);
 
             $tiendaVentas += $sTiendaSales;
-            $tiendaQr     += $sTiendaQr;
-            $tiendaCard   += $sTiendaCard;
-            $tiendaCash   += $sTiendaCash;
+            $tiendaQr += $sTiendaQr;
+            $tiendaCard += $sTiendaCard;
+            $tiendaCash += $sTiendaCash;
             $tiendaStoreOrdersCount += $session->storeSales()->count();
             $tiendaStoreItemsQty += (int) $session->storeSales()->sum('quantity');
 
             // Métricas nocturnas individuales
-            $nightVentas = (float)$closing->total_bar_sales;
-            $nightEfectivo = (float)$closing->total_cash_invoices;
-            $nightQrYasta = (float)$closing->total_qr_yasta;
-            $nightQrYape = (float)$closing->total_qr_yape;
+            $nightVentas = (float) $closing->total_bar_sales;
+            $nightEfectivo = (float) $closing->total_cash_invoices;
+            $nightQrYasta = (float) $closing->total_qr_yasta;
+            $nightQrYape = (float) $closing->total_qr_yape;
             $nightQr = $nightQrYasta + $nightQrYape;
-            $nightCardGross = (float)$closing->total_card;
-            $nightCardCommission = (float)$closing->total_card_commission;
-            $nightCardNet = (float)$closing->total_card_net;
-            $nightPersonal = (float)$closing->total_staff_paid;
-            $nightGastos = (float)$closing->total_expenses;
+            $nightCardGross = (float) $closing->total_card;
+            $nightCardCommission = (float) $closing->total_card_commission;
+            $nightCardNet = (float) $closing->total_card_net;
+            $nightPersonal = (float) $closing->total_staff_paid;
+            $nightGastos = (float) $closing->total_expenses;
             $nightIngresos = $nightCardGross + $nightQr + $nightEfectivo;
             $nightEgresos = $nightPersonal + $nightGastos;
             $nightNeto = $nightIngresos - $nightEgresos;
@@ -257,12 +259,12 @@ class NightSessionService
             $totalCardNet += $nightCardNet;
             $totalPersonal += $nightPersonal;
             $totalGastos += $nightGastos;
-            $totalGuardarropa += (float)$closing->total_guardarropa;
-            $totalSnacks += (float)$closing->total_snacks;
+            $totalGuardarropa += (float) $closing->total_guardarropa;
+            $totalSnacks += (float) $closing->total_snacks;
 
             $nightsData[] = [
                 'id' => $session->id,
-                'date' => \Carbon\Carbon::parse($session->session_date)->format('d/m/Y'),
+                'date' => Carbon::parse($session->session_date)->format('d/m/Y'),
                 'raw_date' => $session->session_date,
                 'day_name' => $session->day_name,
                 'status' => $session->status,
@@ -283,8 +285,8 @@ class NightSessionService
         $totalEgresos = $totalPersonal + $totalGastos;
         $totalNeto = $totalIngresos - $totalEgresos;
 
-        $startDate = $sessions->first() ? \Carbon\Carbon::parse($sessions->first()->session_date)->format('d/m/Y') : '';
-        $endDate = $sessions->last() ? \Carbon\Carbon::parse($sessions->last()->session_date)->format('d/m/Y') : '';
+        $startDate = $sessions->first() ? Carbon::parse($sessions->first()->session_date)->format('d/m/Y') : '';
+        $endDate = $sessions->last() ? Carbon::parse($sessions->last()->session_date)->format('d/m/Y') : '';
         $dateRange = $startDate === $endDate ? $startDate : "Del {$startDate} al {$endDate}";
 
         return [

@@ -54,7 +54,7 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): ?string
     {
         if ($this->avatar && file_exists(public_path($this->avatar))) {
-            return asset($this->avatar) . '?v=' . ($this->updated_at ? $this->updated_at->timestamp : time());
+            return asset($this->avatar).'?v='.($this->updated_at ? $this->updated_at->timestamp : time());
         }
 
         return null;

@@ -38,13 +38,10 @@
                 </label>
                 <select name="role" id="role" required 
                         class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-[#F5B81C] transition-all cursor-pointer">
-                    <option value="Mesero" class="bg-zinc-900">Mesero</option>
-                    <option value="Limpieza" class="bg-zinc-900">Limpieza</option>
-                    <option value="Seguridad" class="bg-zinc-900">Seguridad</option>
-                    <option value="Bartender Principal" class="bg-zinc-900">Bartender Principal</option>
-                    <option value="Bartender Subterráneo" class="bg-zinc-900">Bartender Subterráneo</option>
-                    <option value="DJ / Sonido" class="bg-zinc-900">DJ / Sonido</option>
-                    <option value="Administrador" class="bg-zinc-900">Administrador</option>
+                    <option value="MESERO" {{ old('role') === 'MESERO' ? 'selected' : '' }} class="bg-zinc-900">Mesero</option>
+                    <option value="BARTENDER" {{ old('role') === 'BARTENDER' ? 'selected' : '' }} class="bg-zinc-900">Bartender</option>
+                    <option value="SEGURIDAD" {{ old('role') === 'SEGURIDAD' ? 'selected' : '' }} class="bg-zinc-900">Seguridad</option>
+                    <option value="LIMPIEZA" {{ old('role') === 'LIMPIEZA' ? 'selected' : '' }} class="bg-zinc-900">Limpieza</option>
                 </select>
             </div>
 

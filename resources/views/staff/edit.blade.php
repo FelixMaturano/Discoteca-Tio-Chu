@@ -38,13 +38,10 @@
                 </label>
                 <select name="role" id="role" required 
                         class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-[#F5B81C] transition-all cursor-pointer">
-                    <option value="Mesero" {{ $staff->role === 'Mesero' || $staff->role === 'Staff / Mesero' || $staff->role === 'Staff / Mozo' || $staff->role === 'Staff / Mesera' ? 'selected' : '' }} class="bg-zinc-900">Mesero</option>
-                    <option value="Limpieza" {{ $staff->role === 'Limpieza' || $staff->role === 'Staff / Limpieza' ? 'selected' : '' }} class="bg-zinc-900">Limpieza</option>
-                    <option value="Seguridad" {{ $staff->role === 'Seguridad' || str_contains($staff->role, 'Seguridad') ? 'selected' : '' }} class="bg-zinc-900">Seguridad</option>
-                    <option value="Bartender Principal" {{ $staff->role === 'Bartender Principal' ? 'selected' : '' }} class="bg-zinc-900">Bartender Principal</option>
-                    <option value="Bartender Subterráneo" {{ $staff->role === 'Bartender Subterráneo' ? 'selected' : '' }} class="bg-zinc-900">Bartender Subterráneo</option>
-                    <option value="DJ / Sonido" {{ $staff->role === 'DJ / Sonido' ? 'selected' : '' }} class="bg-zinc-900">DJ / Sonido</option>
-                    <option value="Administrador" {{ $staff->role === 'Administrador' ? 'selected' : '' }} class="bg-zinc-900">Administrador</option>
+                    <option value="MESERO" {{ old('role', $staff->getCanonicalRole()) === 'MESERO' ? 'selected' : '' }} class="bg-zinc-900">Mesero</option>
+                    <option value="BARTENDER" {{ old('role', $staff->getCanonicalRole()) === 'BARTENDER' ? 'selected' : '' }} class="bg-zinc-900">Bartender</option>
+                    <option value="SEGURIDAD" {{ old('role', $staff->getCanonicalRole()) === 'SEGURIDAD' ? 'selected' : '' }} class="bg-zinc-900">Seguridad</option>
+                    <option value="LIMPIEZA" {{ old('role', $staff->getCanonicalRole()) === 'LIMPIEZA' ? 'selected' : '' }} class="bg-zinc-900">Limpieza</option>
                 </select>
             </div>
 

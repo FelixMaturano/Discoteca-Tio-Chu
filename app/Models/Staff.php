@@ -49,9 +49,16 @@ class Staff extends Model
     public function worksOnDay(string $dayName): bool
     {
         $day = mb_strtolower(trim($dayName));
-        if (str_contains($day, 'viernes')) return (bool)$this->works_friday;
-        if (str_contains($day, 'sabado') || str_contains($day, 'sábado')) return (bool)$this->works_saturday;
-        if (str_contains($day, 'domingo')) return (bool)$this->works_sunday;
+        if (str_contains($day, 'viernes')) {
+            return (bool) $this->works_friday;
+        }
+        if (str_contains($day, 'sabado') || str_contains($day, 'sábado')) {
+            return (bool) $this->works_saturday;
+        }
+        if (str_contains($day, 'domingo')) {
+            return (bool) $this->works_sunday;
+        }
+
         return false; // Días extraordinarios (Jueves, etc.) se seleccionan manualmente
     }
 
@@ -62,15 +69,16 @@ class Staff extends Model
     {
         $day = mb_strtolower(trim($dayName));
         if (str_contains($day, 'viernes') && $this->friday_pay !== null) {
-            return (float)$this->friday_pay;
+            return (float) $this->friday_pay;
         }
         if ((str_contains($day, 'sabado') || str_contains($day, 'sábado')) && $this->saturday_pay !== null) {
-            return (float)$this->saturday_pay;
+            return (float) $this->saturday_pay;
         }
         if (str_contains($day, 'domingo') && $this->sunday_pay !== null) {
-            return (float)$this->sunday_pay;
+            return (float) $this->sunday_pay;
         }
-        return (float)$this->default_pay;
+
+        return (float) $this->default_pay;
     }
 
     /**
@@ -102,6 +110,16 @@ class Staff extends Model
         return 'mozos';
     }
 
+    public function getCanonicalRole(): string
+    {
+        return match ($this->getRoleCategory()) {
+            'seguridad' => 'SEGURIDAD',
+            'barra' => 'BARTENDER',
+            'limpieza' => 'LIMPIEZA',
+            default => 'MESERO',
+        };
+    }
+
     /**
      * Retorna el número de orden oficial para agrupar y ordenar al personal:
      * 1. Seguridad
@@ -111,7 +129,7 @@ class Staff extends Model
      */
     public function getRoleCategoryRank(): int
     {
-        return match($this->getRoleCategory()) {
+        return match ($this->getRoleCategory()) {
             'seguridad' => 1,
             'barra' => 2,
             'mozos' => 3,

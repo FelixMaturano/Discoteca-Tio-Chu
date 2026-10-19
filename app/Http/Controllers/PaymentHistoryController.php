@@ -40,28 +40,30 @@ class PaymentHistoryController extends Controller
 
             // Calcular montos y ordenar: mayor deuda primero, deuda 0 al final
             $attendances = $rawAttendances->map(function ($att) {
-                $payAmount = (float)$att->pay_amount;
-                $isPaid = (bool)$att->is_paid;
+                $payAmount = (float) $att->pay_amount;
+                $isPaid = (bool) $att->is_paid;
                 $debt = $isPaid ? 0.0 : $payAmount;
 
                 $att->debt_amount = $debt;
+
                 return $att;
             })->sort(function ($a, $b) {
                 // Ordenar por deuda descendente (a los que se debe más primero)
                 if ($b->debt_amount != $a->debt_amount) {
                     return $b->debt_amount <=> $a->debt_amount;
                 }
+
                 // Si la deuda es igual, ordenar alfabéticamente por nombre
                 return strcmp($a->staff->name ?? '', $b->staff->name ?? '');
             })->values();
 
             foreach ($attendances as $att) {
-                $totalPlanilla += (float)$att->pay_amount;
+                $totalPlanilla += (float) $att->pay_amount;
                 if ($att->is_paid) {
-                    $totalPagado += (float)$att->pay_amount;
+                    $totalPagado += (float) $att->pay_amount;
                     $pagadosCount++;
                 } else {
-                    $totalDeuda += (float)$att->pay_amount;
+                    $totalDeuda += (float) $att->pay_amount;
                     $conDeudaCount++;
                 }
             }
@@ -74,8 +76,8 @@ class PaymentHistoryController extends Controller
             $unpaidAttendances = StaffAttendance::where('night_session_id', $s->id)->where('is_paid', false)->get();
             $paidAttendances = StaffAttendance::where('night_session_id', $s->id)->where('is_paid', true)->get();
 
-            $debt = (float)$unpaidAttendances->sum('pay_amount');
-            $paid = (float)$paidAttendances->sum('pay_amount');
+            $debt = (float) $unpaidAttendances->sum('pay_amount');
+            $paid = (float) $paidAttendances->sum('pay_amount');
             $total = $debt + $paid;
             $unpaidCount = $unpaidAttendances->count();
             $paidCount = $paidAttendances->count();
@@ -94,8 +96,8 @@ class PaymentHistoryController extends Controller
 
         // Historial global consolidado de todas las noches para resumen general
         $globalSummary = [
-            'total_deuda_historica' => (float)StaffAttendance::where('is_paid', false)->sum('pay_amount'),
-            'total_pagado_historico' => (float)StaffAttendance::where('is_paid', true)->sum('pay_amount'),
+            'total_deuda_historica' => (float) StaffAttendance::where('is_paid', false)->sum('pay_amount'),
+            'total_pagado_historico' => (float) StaffAttendance::where('is_paid', true)->sum('pay_amount'),
             'noches_con_deuda' => NightSession::whereHas('staffAttendances', function ($q) {
                 $q->where('is_paid', false);
             })->count(),
@@ -133,17 +135,18 @@ class PaymentHistoryController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             $session = $attendance->nightSession;
-            $unpaid = $session ? (float)$session->staffAttendances()->where('is_paid', false)->sum('pay_amount') : 0;
-            $paid = $session ? (float)$session->staffAttendances()->where('is_paid', true)->sum('pay_amount') : 0;
+            $unpaid = $session ? (float) $session->staffAttendances()->where('is_paid', false)->sum('pay_amount') : 0;
+            $paid = $session ? (float) $session->staffAttendances()->where('is_paid', true)->sum('pay_amount') : 0;
+
             return response()->json([
                 'success' => true,
                 'workerName' => $workerName,
-                'amount' => (float)$attendance->pay_amount,
+                'amount' => (float) $attendance->pay_amount,
                 'totalDeuda' => $unpaid,
                 'totalPagado' => $paid,
             ]);
         }
 
-        return back()->with('success', "Se registró el pago de Bs. " . number_format($attendance->pay_amount, 2) . " para {$workerName}. Deuda saldada.");
+        return back()->with('success', 'Se registró el pago de Bs. '.number_format($attendance->pay_amount, 2)." para {$workerName}. Deuda saldada.");
     }
 }

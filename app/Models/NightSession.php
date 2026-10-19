@@ -13,6 +13,21 @@ class NightSession extends Model
 {
     use HasFactory;
 
+    public static function weekdayNameForDate(string $date): string
+    {
+        $weekdays = [
+            0 => 'Domingo',
+            1 => 'Lunes',
+            2 => 'Martes',
+            3 => 'Miércoles',
+            4 => 'Jueves',
+            5 => 'Viernes',
+            6 => 'Sábado',
+        ];
+
+        return $weekdays[Carbon::parse($date)->dayOfWeek];
+    }
+
     protected $fillable = [
         'session_date',
         'day_name',

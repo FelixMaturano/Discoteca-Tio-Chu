@@ -224,7 +224,7 @@
             <div class="sidebar-divider hidden w-6 mx-auto my-1 border-t border-zinc-800/80"></div>
 
             <!-- Facturas & Tarjetas (Tarjeteos) -->
-            <!--<a href="{{ route('invoices.index') }}" 
+            <a href="{{ route('invoices.index') }}" 
                title="Facturas & Tarjetas"
                class="sidebar-item group flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all duration-150 {{ request()->routeIs('invoices.*') ? 'border-[#F5B81C] bg-[#F5B81C] text-black font-extrabold' : 'border-transparent text-zinc-300 font-semibold hover:border-zinc-800 hover:bg-zinc-900/80 hover:text-white' }}">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -239,7 +239,7 @@
                     <span class="sidebar-dot w-1.5 h-1.5 rounded-full bg-black shrink-0"></span>
                 @endif
             </a>
-            -->
+            
             <!-- Cobros QR -->
             <a href="{{ route('qrs.index') }}" 
                title="Cobros QR"
@@ -280,7 +280,7 @@
         </div>
 
         <!-- Bloque 3: Gestión -->
-        {{-- <div class="space-y-1">
+        <div class="space-y-1">
             <div class="sidebar-category px-2">
                 <span class="text-[9px] font-black uppercase tracking-widest text-[#F5B81C]/90">
                     Gestión
@@ -405,7 +405,7 @@
                     <span class="sidebar-dot w-1.5 h-1.5 rounded-full bg-black shrink-0"></span>
                 @endif
             </a> 
-        </div>--}}
+        </div>
 
     </nav>
 

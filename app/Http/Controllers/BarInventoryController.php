@@ -7,6 +7,7 @@ use App\Models\NightSession;
 use App\Models\Product;
 use App\Models\ProductStockMovement;
 use App\Services\NightSessionService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -27,10 +28,10 @@ class BarInventoryController extends Controller
         $allSessions = NightSession::orderByDesc('session_date')->get();
 
         $rawBar = $request->get('bar', 'Barra Principal');
-        $selectedBar = match($rawBar) {
+        $selectedBar = match ($rawBar) {
             'Barra Kelly (Principal)', 'Kelly', 'Principal' => 'Barra Principal',
             'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo' => 'Barra Subterráneo',
-            default => in_array($rawBar, ['Barra Principal', 'Barra Subterráneo']) ? $rawBar : 'Barra Principal',
+            default => in_array($rawBar, ['Barra Principal', 'Barra Subterráneo', 'Tienda']) ? $rawBar : 'Barra Principal',
         };
         $availableBars = ['Barra Principal', 'Barra Subterráneo', 'Tienda'];
 
@@ -39,7 +40,7 @@ class BarInventoryController extends Controller
         $previousSession = null;
 
         if ($session) {
-            $dateStr = \Carbon\Carbon::parse($session->session_date)->format('Y-m-d');
+            $dateStr = Carbon::parse($session->session_date)->format('Y-m-d');
             // Buscar la noche anterior real excluyendo la sesión actual
             $previousSession = NightSession::where('id', '!=', $session->id)
                 ->whereDate('session_date', '<', $dateStr)
@@ -79,8 +80,8 @@ class BarInventoryController extends Controller
                 ->where('bar_name', $selectedBar)
                 ->get();
 
-            $liquorSales = $allBarSales->filter(fn($s) => $s->product && $s->product->category !== 'Mixers');
-            $mixerSales = $allBarSales->filter(fn($s) => $s->product && $s->product->category === 'Mixers');
+            $liquorSales = $allBarSales->filter(fn ($s) => $s->product && $s->product->category !== 'Mixers');
+            $mixerSales = $allBarSales->filter(fn ($s) => $s->product && $s->product->category === 'Mixers');
         }
 
         return view('bar_inventory.index', compact(
@@ -132,13 +133,13 @@ class BarInventoryController extends Controller
         };
 
         $session = NightSession::findOrFail($sessionId);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return back()->with('error', 'La noche está cerrada. Para modificar aperturas o inventario, reabre la noche desde Cierre de Caja.');
         }
 
         DB::transaction(function () use ($sessionId, $selectedBar, $validated): void {
             $lockedSession = NightSession::query()->lockForUpdate()->findOrFail($sessionId);
-            if (!$lockedSession->isOpen()) {
+            if (! $lockedSession->isOpen()) {
                 throw ValidationException::withMessages([
                     'night_session_id' => 'La noche está cerrada y no admite despachos.',
                 ]);
@@ -152,7 +153,7 @@ class BarInventoryController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                if (!$barSale) {
+                if (! $barSale) {
                     throw ValidationException::withMessages([
                         "inventory.{$id}" => 'El producto no pertenece a esta noche y barra.',
                     ]);
@@ -228,7 +229,7 @@ class BarInventoryController extends Controller
         return redirect()->route('barInventory.index', [
             'session_id' => $sessionId,
             'bar' => $selectedBar,
-        ])->with('success', 'Inventario y aperturas de ' . $selectedBar . ' guardados correctamente.');
+        ])->with('success', 'Inventario y aperturas de '.$selectedBar.' guardados correctamente.');
     }
 
     /**
@@ -240,16 +241,16 @@ class BarInventoryController extends Controller
         $selectedBar = $request->input('bar_name');
 
         $session = NightSession::findOrFail($sessionId);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return back()->with('error', 'La noche está cerrada. No se pueden sincronizar saldos en una noche cerrada.');
         }
-        $dateStr = \Carbon\Carbon::parse($session->session_date)->format('Y-m-d');
+        $dateStr = Carbon::parse($session->session_date)->format('Y-m-d');
         $previousSession = NightSession::where('id', '!=', $session->id)
             ->whereDate('session_date', '<', $dateStr)
             ->orderByDesc('session_date')
             ->first() ?? NightSession::where('id', '<', $session->id)->orderByDesc('id')->first();
 
-        if (!$previousSession) {
+        if (! $previousSession) {
             return back()->with('error', 'No se encontró una noche anterior para sincronizar saldos.');
         }
 
@@ -264,26 +265,26 @@ class BarInventoryController extends Controller
                 ->where('product_id', $barSale->product_id)
                 ->first();
 
-            $prevSaldo = $prevSale ? (int)$prevSale->saldo : 0;
-            $unitsPerPkg = $barSale->product->units_per_package > 0 ? (int)$barSale->product->units_per_package : 1;
+            $prevSaldo = $prevSale ? (int) $prevSale->saldo : 0;
+            $unitsPerPkg = $barSale->product->units_per_package > 0 ? (int) $barSale->product->units_per_package : 1;
 
             $initPkg = intdiv($prevSaldo, $unitsPerPkg);
             $initUnits = $prevSaldo % $unitsPerPkg;
 
             $barSale->initial_packages = $initPkg;
             $barSale->initial_units = $initUnits;
-            $barSale->packages = $initPkg + (int)$barSale->added_packages + (int)$barSale->night_packages;
-            $barSale->units = $initUnits + (int)$barSale->added_units + (int)$barSale->night_units;
+            $barSale->packages = $initPkg + (int) $barSale->added_packages + (int) $barSale->night_packages;
+            $barSale->units = $initUnits + (int) $barSale->added_units + (int) $barSale->night_units;
             $barSale->total_initial = ($barSale->packages * $unitsPerPkg) + $barSale->units;
             // El Saldo Cierre de la nueva noche se mantiene siempre en 0
             $barSale->saldo = 0;
-            $barSale->vendido = max(0, $barSale->total_initial - (int)$barSale->saldo);
+            $barSale->vendido = max(0, $barSale->total_initial - (int) $barSale->saldo);
             if ($barSale->product->category !== 'Mixers') {
-                $barSale->subtotal = $barSale->vendido * (float)$barSale->unit_price;
+                $barSale->subtotal = $barSale->vendido * (float) $barSale->unit_price;
             }
             $barSale->save();
         }
 
-        return back()->with('success', 'Saldos de la noche anterior sincronizados correctamente para ' . $selectedBar . '.');
+        return back()->with('success', 'Saldos de la noche anterior sincronizados correctamente para '.$selectedBar.'.');
     }
 }

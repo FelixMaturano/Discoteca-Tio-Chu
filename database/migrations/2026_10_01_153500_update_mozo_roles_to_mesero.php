@@ -13,13 +13,13 @@ return new class extends Migration
         DB::table('staff')
             ->where('role', 'like', '%mozo%')
             ->update([
-                'role' => DB::raw("REPLACE(role, 'Mozo', 'Mesero')")
+                'role' => DB::raw("REPLACE(role, 'Mozo', 'Mesero')"),
             ]);
 
         DB::table('staff')
             ->where('role', 'like', '%MOZO%')
             ->update([
-                'role' => DB::raw("REPLACE(role, 'MOZO', 'Mesero')")
+                'role' => DB::raw("REPLACE(role, 'MOZO', 'Mesero')"),
             ]);
     }
 

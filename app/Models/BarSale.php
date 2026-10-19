@@ -33,21 +33,20 @@ class BarSale extends Model
 
     protected $casts = [
         'initial_packages' => 'integer',
-        'initial_units'    => 'integer',
-        'added_packages'   => 'integer',
-        'added_units'      => 'integer',
-        'night_packages'   => 'integer',
-        'night_units'      => 'integer',
-        'packages'         => 'integer',
-        'units'            => 'integer',
-        'total_initial'    => 'integer',
-        'saldo'            => 'integer',
-        'vendido'          => 'integer',
-        'unit_price'       => 'decimal:2',
-        'subtotal'         => 'decimal:2',
+        'initial_units' => 'integer',
+        'added_packages' => 'integer',
+        'added_units' => 'integer',
+        'night_packages' => 'integer',
+        'night_units' => 'integer',
+        'packages' => 'integer',
+        'units' => 'integer',
+        'total_initial' => 'integer',
+        'saldo' => 'integer',
+        'vendido' => 'integer',
+        'unit_price' => 'decimal:2',
+        'subtotal' => 'decimal:2',
         'stock_synced_vendido' => 'integer',
     ];
-
 
     public function nightSession(): BelongsTo
     {
@@ -64,11 +63,12 @@ class BarSale extends Model
      */
     public function calculateTotals(): void
     {
-        $unitsPerPkg = (int)($this->product?->units_per_package ?? 1);
-        if ($unitsPerPkg < 1) $unitsPerPkg = 1;
-        $this->total_initial = ((int)$this->packages * $unitsPerPkg) + (int)$this->units;
-        $this->vendido = max(0, $this->total_initial - (int)$this->saldo);
-        $this->subtotal = $this->vendido * (float)$this->unit_price;
+        $unitsPerPkg = (int) ($this->product?->units_per_package ?? 1);
+        if ($unitsPerPkg < 1) {
+            $unitsPerPkg = 1;
+        }
+        $this->total_initial = ((int) $this->packages * $unitsPerPkg) + (int) $this->units;
+        $this->vendido = max(0, $this->total_initial - (int) $this->saldo);
+        $this->subtotal = $this->vendido * (float) $this->unit_price;
     }
 }
-

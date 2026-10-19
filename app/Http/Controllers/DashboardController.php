@@ -47,7 +47,7 @@ class DashboardController extends Controller
         ]);
 
         $session = NightSession::findOrFail($validated['night_session_id']);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return back()->with('error', 'No se puede registrar un pago de cerveza en una noche cerrada.');
         }
 
@@ -69,7 +69,7 @@ class DashboardController extends Controller
     public function destroyBeerPayment(Request $request, BeerPayment $beerPayment)
     {
         $session = $beerPayment->nightSession;
-        if ($session && !$session->isOpen()) {
+        if ($session && ! $session->isOpen()) {
             return back()->with('error', 'No se puede eliminar un pago de cerveza de una noche cerrada.');
         }
 
@@ -90,7 +90,7 @@ class DashboardController extends Controller
         ]);
 
         $session = NightSession::findOrFail($validated['night_session_id']);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return back()->with('error', 'No se puede actualizar el efectivo de una noche cerrada.');
         }
 

@@ -16,12 +16,12 @@ class ServerTunnelController extends Controller
         $status = $this->checkTunnelStatus();
 
         return view('server.index', [
-            'isRunning'  => $status['is_running'],
-            'publicUrl'  => $status['url'],
-            'proto'      => $status['proto'] ?? 'https',
-            'port'       => env('NGROK_PORT', 8000),
-            'hasToken'   => !empty(env('NGROK_AUTHTOKEN')),
-            'localIp'    => $this->getLocalIpAddress(),
+            'isRunning' => $status['is_running'],
+            'publicUrl' => $status['url'],
+            'proto' => $status['proto'] ?? 'https',
+            'port' => env('NGROK_PORT', 8000),
+            'hasToken' => ! empty(env('NGROK_AUTHTOKEN')),
+            'localIp' => $this->getLocalIpAddress(),
         ]);
     }
 
@@ -35,10 +35,10 @@ class ServerTunnelController extends Controller
         return response()->json([
             'is_running' => $status['is_running'],
             'public_url' => $status['url'],
-            'proto'      => $status['proto'] ?? 'https',
-            'port'       => env('NGROK_PORT', 8000),
-            'has_token'  => !empty(env('NGROK_AUTHTOKEN')),
-            'local_ip'   => $this->getLocalIpAddress(),
+            'proto' => $status['proto'] ?? 'https',
+            'port' => env('NGROK_PORT', 8000),
+            'has_token' => ! empty(env('NGROK_AUTHTOKEN')),
+            'local_ip' => $this->getLocalIpAddress(),
         ]);
     }
 
@@ -57,16 +57,16 @@ class ServerTunnelController extends Controller
         if (file_exists($envPath)) {
             $env = file_get_contents($envPath);
             if (preg_match('/^NGROK_AUTHTOKEN=.*/m', $env)) {
-                $env = preg_replace('/^NGROK_AUTHTOKEN=.*/m', 'NGROK_AUTHTOKEN=' . $token, $env);
+                $env = preg_replace('/^NGROK_AUTHTOKEN=.*/m', 'NGROK_AUTHTOKEN='.$token, $env);
             } else {
-                $env .= "\nNGROK_AUTHTOKEN=" . $token . "\n";
+                $env .= "\nNGROK_AUTHTOKEN=".$token."\n";
             }
             file_put_contents($envPath, $env);
         }
 
         $ngrokCmd = $this->ensureNgrokExecutable();
         if ($ngrokCmd) {
-            @exec($ngrokCmd . ' config add-authtoken ' . escapeshellarg($token) . ' 2>&1');
+            @exec($ngrokCmd.' config add-authtoken '.escapeshellarg($token).' 2>&1');
         }
 
         return response()->json([
@@ -95,10 +95,10 @@ class ServerTunnelController extends Controller
     public function start(Request $request)
     {
         $status = $this->checkTunnelStatus();
-        if ($status['is_running'] && !empty($status['url'])) {
+        if ($status['is_running'] && ! empty($status['url'])) {
             return response()->json([
-                'success'    => true,
-                'message'    => 'El servidor ya se encuentra activo.',
+                'success' => true,
+                'message' => 'El servidor ya se encuentra activo.',
                 'public_url' => $status['url'],
             ]);
         }
@@ -107,21 +107,21 @@ class ServerTunnelController extends Controller
         $token = env('NGROK_AUTHTOKEN');
         if (empty($token)) {
             return response()->json([
-                'success'     => false,
+                'success' => false,
                 'needs_token' => true,
-                'message'     => 'Primero debes ingresar tu clave de servidor.',
+                'message' => 'Primero debes ingresar tu clave de servidor.',
             ], 422);
         }
 
         $ngrokCmd = $this->ensureNgrokExecutable();
-        if (!$ngrokCmd) {
+        if (! $ngrokCmd) {
             return response()->json([
                 'success' => false,
                 'message' => 'No se encontró el ejecutable ngrok.exe. Por favor verifica la instalación.',
             ], 500);
         }
 
-        @exec($ngrokCmd . ' config add-authtoken ' . escapeshellarg($token) . ' 2>&1');
+        @exec($ngrokCmd.' config add-authtoken '.escapeshellarg($token).' 2>&1');
 
         // 2. Limpiar cualquier proceso previo colgado
         @exec('taskkill /F /IM ngrok.exe 2>&1');
@@ -132,10 +132,10 @@ class ServerTunnelController extends Controller
         $logPath = storage_path('logs/ngrok.log');
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $cmd = 'start /B "" ' . $ngrokCmd . ' http ' . $port . ' --log="' . $logPath . '" --log-format=json';
-            pclose(popen($cmd, "r"));
+            $cmd = 'start /B "" '.$ngrokCmd.' http '.$port.' --log="'.$logPath.'" --log-format=json';
+            pclose(popen($cmd, 'r'));
         } else {
-            $cmd = $ngrokCmd . ' http ' . $port . ' --log="' . $logPath . '" --log-format=json > /dev/null 2>&1 &';
+            $cmd = $ngrokCmd.' http '.$port.' --log="'.$logPath.'" --log-format=json > /dev/null 2>&1 &';
             exec($cmd);
         }
 
@@ -144,7 +144,7 @@ class ServerTunnelController extends Controller
         for ($i = 0; $i < 10; $i++) {
             usleep(500000); // 500ms
             $check = $this->checkTunnelStatus();
-            if ($check['is_running'] && !empty($check['url'])) {
+            if ($check['is_running'] && ! empty($check['url'])) {
                 $publicUrl = $check['url'];
                 break;
             }
@@ -152,8 +152,8 @@ class ServerTunnelController extends Controller
 
         if ($publicUrl) {
             return response()->json([
-                'success'    => true,
-                'message'    => 'Servidor remoto iniciado con éxito.',
+                'success' => true,
+                'message' => 'Servidor remoto iniciado con éxito.',
                 'public_url' => $publicUrl,
             ]);
         }
@@ -191,14 +191,14 @@ class ServerTunnelController extends Controller
         // 1. Verificar si existe ngrok.exe en la raíz del proyecto
         $localExe = base_path('ngrok.exe');
         if (file_exists($localExe)) {
-            return '"' . $localExe . '"';
+            return '"'.$localExe.'"';
         }
 
         // 2. Verificar si está en el PATH del sistema
         $isWin = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
         $check = $isWin ? 'where ngrok 2>nul' : 'which ngrok 2>/dev/null';
         $output = @shell_exec($check);
-        if (!empty(trim((string)$output))) {
+        if (! empty(trim((string) $output))) {
             return 'ngrok';
         }
 
@@ -208,25 +208,25 @@ class ServerTunnelController extends Controller
                 $zipUrl = 'https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip';
                 $zipFile = storage_path('app/ngrok.zip');
 
-                if (!is_dir(storage_path('app'))) {
+                if (! is_dir(storage_path('app'))) {
                     @mkdir(storage_path('app'), 0777, true);
                 }
 
                 $content = @file_get_contents($zipUrl);
                 if ($content) {
                     file_put_contents($zipFile, $content);
-                    $zip = new \ZipArchive();
+                    $zip = new \ZipArchive;
                     if ($zip->open($zipFile) === true) {
                         $zip->extractTo(base_path(), ['ngrok.exe']);
                         $zip->close();
                     }
                     @unlink($zipFile);
                     if (file_exists($localExe)) {
-                        return '"' . $localExe . '"';
+                        return '"'.$localExe.'"';
                     }
                 }
             } catch (\Throwable $e) {
-                Log::error('Error descargando ngrok: ' . $e->getMessage());
+                Log::error('Error descargando ngrok: '.$e->getMessage());
             }
         }
 
@@ -245,13 +245,14 @@ class ServerTunnelController extends Controller
                 $data = $response->json();
                 $tunnels = $data['tunnels'] ?? [];
 
-                if (!empty($tunnels)) {
+                if (! empty($tunnels)) {
                     // Priorizar túnel https
                     $httpsTunnel = collect($tunnels)->firstWhere('proto', 'https') ?? $tunnels[0];
+
                     return [
                         'is_running' => true,
-                        'url'        => $httpsTunnel['public_url'] ?? null,
-                        'proto'      => $httpsTunnel['proto'] ?? 'https',
+                        'url' => $httpsTunnel['public_url'] ?? null,
+                        'proto' => $httpsTunnel['proto'] ?? 'https',
                     ];
                 }
             }
@@ -261,8 +262,8 @@ class ServerTunnelController extends Controller
 
         return [
             'is_running' => false,
-            'url'        => null,
-            'proto'      => 'https',
+            'url' => null,
+            'proto' => 'https',
         ];
     }
 
@@ -272,6 +273,7 @@ class ServerTunnelController extends Controller
     private function getLocalIpAddress(): string
     {
         $ip = gethostbyname(gethostname());
+
         return ($ip && $ip !== '127.0.0.1') ? $ip : '192.168.1.X';
     }
 }

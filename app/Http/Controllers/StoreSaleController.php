@@ -38,17 +38,17 @@ class StoreSaleController extends Controller
             'sync_qr' => 'nullable',
         ]);
 
-        $cashAmount = (float)$validated['cash_amount'];
-        $qrAmount = (float)$validated['qr_amount'];
-        $cardAmount = (float)$validated['card_amount'];
+        $cashAmount = (float) $validated['cash_amount'];
+        $qrAmount = (float) $validated['qr_amount'];
+        $cardAmount = (float) $validated['card_amount'];
         $cobrante = trim($validated['cobrante_name']);
         $session = NightSession::findOrFail($validated['night_session_id']);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return back()->with('error', 'No se pueden registrar despachos en una noche cerrada.');
         }
 
         $totalPrice = collect($validated['orders'])->sum(
-            fn (array $order): float => (int)$order['quantity'] * (float)$order['unit_price']
+            fn (array $order): float => (int) $order['quantity'] * (float) $order['unit_price']
         );
         $paymentTotal = $cashAmount + $qrAmount + $cardAmount;
         if (abs($totalPrice - $paymentTotal) > 0.01) {
@@ -59,8 +59,8 @@ class StoreSaleController extends Controller
 
         DB::transaction(function () use ($validated, $session, $cobrante, $cashAmount, $qrAmount, $cardAmount, $request): void {
             foreach ($validated['orders'] as $index => $order) {
-                $quantity = (int)$order['quantity'];
-                $unitPrice = (float)$order['unit_price'];
+                $quantity = (int) $order['quantity'];
+                $unitPrice = (float) $order['unit_price'];
                 StoreSale::create([
                     'night_session_id' => $session->id,
                     'product_id' => $order['product_id'],
@@ -92,7 +92,7 @@ class StoreSaleController extends Controller
             }
 
             if ($cardAmount > 0) {
-                $invoice = new Invoice();
+                $invoice = new Invoice;
                 $invoice->night_session_id = $session->id;
                 $invoice->correlative_num = (Invoice::where('night_session_id', $session->id)->max('correlative_num') ?? 0) + 1;
                 $invoice->payment_method = 'tarjeta';
@@ -107,13 +107,13 @@ class StoreSaleController extends Controller
 
         $this->sessionService->recalculateClosing($session);
 
-        return back()->with('success', 'Pedido de Tienda registrado con ' . count($validated['orders']) . ' producto(s) por ' . $cobrante . '.');
+        return back()->with('success', 'Pedido de Tienda registrado con '.count($validated['orders']).' producto(s) por '.$cobrante.'.');
     }
 
     public function destroy(StoreSale $storeSale)
     {
         $session = $storeSale->nightSession;
-        if ($session && !$session->isOpen()) {
+        if ($session && ! $session->isOpen()) {
             return back()->with('error', 'No se pueden eliminar despachos de una noche cerrada.');
         }
 
@@ -140,15 +140,15 @@ class StoreSaleController extends Controller
         ]);
 
         $session = NightSession::findOrFail($validated['night_session_id']);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return back()->with('error', 'No se pueden modificar ingresos en una noche cerrada.');
         }
 
         $closing = CashClosing::firstOrCreate(['night_session_id' => $session->id]);
 
         $closing->update([
-            'total_guardarropa' => (float)($validated['guardarropa_amount'] ?? 0),
-            'total_snacks' => (float)($validated['snacks_amount'] ?? 0),
+            'total_guardarropa' => (float) ($validated['guardarropa_amount'] ?? 0),
+            'total_snacks' => (float) ($validated['snacks_amount'] ?? 0),
         ]);
 
         $this->sessionService->recalculateClosing($session);

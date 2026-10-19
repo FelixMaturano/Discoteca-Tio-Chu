@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\NightSession;
-use App\Models\Product;
 use App\Models\BarSale;
 use App\Models\CashClosing;
+use App\Models\NightSession;
+use App\Models\Product;
 use App\Models\Staff;
 use App\Models\StaffAttendance;
 use Illuminate\Database\Seeder;
@@ -20,13 +20,13 @@ class NightSessionSeeder extends Seeder
         // Crear una noche activa inicial para que el sistema esté listo
         $date = now()->format('Y-m-d');
         $session = NightSession::whereDate('session_date', $date)->first();
-        if (!$session) {
+        if (! $session) {
             $session = NightSession::create([
                 'session_date' => $date,
                 'day_name' => 'Viernes',
                 'status' => 'open',
                 'pos_commission_rate' => 0.0130, // 1.3%
-                'notes' => 'Noche de inauguración del sistema'
+                'notes' => 'Noche de inauguración del sistema',
             ]);
         }
 

@@ -16,6 +16,7 @@ class UserController extends Controller
     public function index()
     {
         $users = User::orderBy('id', 'asc')->get();
+
         return view('users.index', compact('users'));
     }
 
@@ -25,21 +26,21 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
         ], [
-            'name.required'     => 'El nombre del usuario es obligatorio.',
-            'email.required'    => 'El correo electrónico es obligatorio.',
-            'email.email'       => 'Ingrese un formato de correo electrónico válido.',
-            'email.unique'      => 'Este correo electrónico ya está registrado en otra cuenta.',
+            'name.required' => 'El nombre del usuario es obligatorio.',
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'Ingrese un formato de correo electrónico válido.',
+            'email.unique' => 'Este correo electrónico ya está registrado en otra cuenta.',
             'password.required' => 'La contraseña de acceso es obligatoria.',
-            'password.min'      => 'La contraseña debe tener al menos 6 caracteres.',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
         ]);
 
         $user = User::create([
-            'name'     => trim($validated['name']),
-            'email'    => strtolower(trim($validated['email'])),
+            'name' => trim($validated['name']),
+            'email' => strtolower(trim($validated['email'])),
             'password' => Hash::make($validated['password']),
         ]);
 
@@ -52,21 +53,21 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:6'],
         ], [
-            'name.required'  => 'El nombre del usuario es obligatorio.',
+            'name.required' => 'El nombre del usuario es obligatorio.',
             'email.required' => 'El correo electrónico es obligatorio.',
-            'email.email'    => 'Ingrese un formato de correo electrónico válido.',
-            'email.unique'   => 'Este correo electrónico ya pertenece a otra cuenta.',
-            'password.min'   => 'La nueva contraseña debe tener al menos 6 caracteres.',
+            'email.email' => 'Ingrese un formato de correo electrónico válido.',
+            'email.unique' => 'Este correo electrónico ya pertenece a otra cuenta.',
+            'password.min' => 'La nueva contraseña debe tener al menos 6 caracteres.',
         ]);
 
-        $user->name  = trim($validated['name']);
+        $user->name = trim($validated['name']);
         $user->email = strtolower(trim($validated['email']));
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
 

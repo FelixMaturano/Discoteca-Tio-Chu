@@ -26,10 +26,11 @@ class AuthController extends Controller
         ]);
 
         // Clave única por correo + IP para prevenir ataques de fuerza bruta
-        $throttleKey = Str::transliterate(Str::lower($credentials['email']) . '|' . $request->ip());
+        $throttleKey = Str::transliterate(Str::lower($credentials['email']).'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
+
             return back()->withErrors([
                 'email' => "Demasiados intentos fallidos. Por seguridad, intente de nuevo en {$seconds} segundos.",
             ])->onlyInput('email');

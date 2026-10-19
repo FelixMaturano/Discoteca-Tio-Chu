@@ -237,12 +237,12 @@ class TioChuSystemTest extends TestCase
     public function test_combos_deduct_included_mixers_and_only_charge_extras(): void
     {
         $session = NightSession::first();
-        $singaniSale = \App\Models\BarSale::where('night_session_id', $session->id)
+        $singaniSale = BarSale::where('night_session_id', $session->id)
             ->whereIn('bar_name', ['Barra Principal', 'Barra Kelly (Principal)'])
             ->where('product_id', 1) // Singani Casa Real Negro (va con Ginger Ale id 23)
             ->first();
 
-        $gingerSale = \App\Models\BarSale::where('night_session_id', $session->id)
+        $gingerSale = BarSale::where('night_session_id', $session->id)
             ->whereIn('bar_name', ['Barra Principal', 'Barra Kelly (Principal)'])
             ->where('product_id', 23) // Ginger Ale 2.0L
             ->first();
@@ -262,8 +262,8 @@ class TioChuSystemTest extends TestCase
                     'units' => 0,
                     'saldo' => 0, // consumido: 12
                     'unit_price' => 25.00,
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response->assertSessionHas('success');
@@ -286,12 +286,12 @@ class TioChuSystemTest extends TestCase
     public function test_gin_deducts_two_tonic_waters_per_combo(): void
     {
         $session = NightSession::first();
-        $ginSale = \App\Models\BarSale::where('night_session_id', $session->id)
+        $ginSale = BarSale::where('night_session_id', $session->id)
             ->whereIn('bar_name', ['Barra Principal', 'Barra Kelly (Principal)'])
             ->where('product_id', 20) // Ganesha Gin (va con Agua Tónica id 26, ratio 2)
             ->first();
 
-        $tonicaSale = \App\Models\BarSale::where('night_session_id', $session->id)
+        $tonicaSale = BarSale::where('night_session_id', $session->id)
             ->whereIn('bar_name', ['Barra Principal', 'Barra Kelly (Principal)'])
             ->where('product_id', 26) // Agua Tónica 1.0L
             ->first();
@@ -311,8 +311,8 @@ class TioChuSystemTest extends TestCase
                     'units' => 1,
                     'saldo' => 0, // consumido: 13 tónicas
                     'unit_price' => 20.00,
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response->assertSessionHas('success');
@@ -341,7 +341,7 @@ class TioChuSystemTest extends TestCase
             'bar_name' => 'Tienda',
             'guardarropa_amount' => 150.00,
             'snacks_amount' => 85.00,
-            'sales' => []
+            'sales' => [],
         ]);
 
         $response->assertSessionHas('success');
@@ -356,7 +356,7 @@ class TioChuSystemTest extends TestCase
     public function test_can_register_invoice_and_calculates_commission(): void
     {
         $session = NightSession::first();
-        
+
         $response = $this->actingAs($this->user)->post(route('invoices.store'), [
             'night_session_id' => $session->id,
             'correlative_num' => 1,
@@ -378,13 +378,14 @@ class TioChuSystemTest extends TestCase
     public function test_can_register_qr_payment(): void
     {
         $session = NightSession::first();
-        
+
         $response = $this->actingAs($this->user)->post(route('qrs.store'), [
             'night_session_id' => $session->id,
             'point_of_sale' => 'Tienda',
             'cobrante_name' => 'JUAN MOZO',
             'bank_app' => 'YASTA',
             'amount' => 250.00,
+            'reference_code' => 'CMP-TEST-123',
         ]);
 
         $response->assertSessionHas('success');
@@ -634,7 +635,7 @@ class TioChuSystemTest extends TestCase
     public function test_closing_and_expenses_module(): void
     {
         $session = NightSession::first();
-        
+
         $response = $this->actingAs($this->user)->post(route('closing.expenses.store'), [
             'night_session_id' => $session->id,
             'category' => 'interno',
@@ -657,7 +658,7 @@ class TioChuSystemTest extends TestCase
     public function test_cannot_create_duplicate_session_date(): void
     {
         NightSession::where('status', 'open')->update(['status' => 'closed']);
-        $existingDate = \Carbon\Carbon::parse(NightSession::first()->session_date)->format('Y-m-d');
+        $existingDate = Carbon::parse(NightSession::first()->session_date)->format('Y-m-d');
         $response = $this->actingAs($this->user)->post(route('sessions.store'), [
             'session_date' => $existingDate,
             'pos_commission_rate' => 0.0130,

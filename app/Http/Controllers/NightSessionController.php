@@ -24,12 +24,14 @@ class NightSessionController extends Controller
     public function index()
     {
         $sessions = NightSession::orderByDesc('session_date')->get();
+
         return view('sessions.index', compact('sessions'));
     }
 
     public function create()
     {
         $openSession = NightSession::where('status', 'open')->first();
+
         return view('sessions.create', compact('openSession'));
     }
 
@@ -39,6 +41,7 @@ class NightSessionController extends Controller
         $openSession = NightSession::where('status', 'open')->first();
         if ($openSession) {
             $openDate = Carbon::parse($openSession->session_date)->format('d/m/Y');
+
             return redirect()->route('sessions.create')->with('error', "No puedes aperturar una nueva noche porque la jornada del {$openSession->day_name} ({$openDate}) aún se encuentra ABIERTA. Debes realizar el Cierre de Caja definitivo antes de abrir una nueva.");
         }
 
@@ -52,18 +55,8 @@ class NightSessionController extends Controller
             'session_date.unique' => 'Ya existe una noche registrada para esta fecha.',
         ]);
 
-        // Determinar automáticamente el día de la semana en español
-        $diasEspañol = [
-            0 => 'Domingo',
-            1 => 'Lunes',
-            2 => 'Martes',
-            3 => 'Miércoles',
-            4 => 'Jueves',
-            5 => 'Viernes',
-            6 => 'Sábado',
-        ];
         $parsedDate = Carbon::parse($validated['session_date']);
-        $validated['day_name'] = $diasEspañol[$parsedDate->dayOfWeek] ?? 'Viernes';
+        $validated['day_name'] = NightSession::weekdayNameForDate($validated['session_date']);
         $validated['status'] = 'open';
 
         $session = NightSession::create($validated);
@@ -118,7 +111,7 @@ class NightSessionController extends Controller
             }
         }
 
-        return redirect()->route('sessions.index')->with('success', 'Noche creada para el ' . $validated['day_name'] . ' ' . $parsedDate->format('d/m/Y') . ' con inventarios inicializados.');
+        return redirect()->route('sessions.index')->with('success', 'Noche creada para el '.$validated['day_name'].' '.$parsedDate->format('d/m/Y').' con inventarios inicializados.');
     }
 
     public function updateStatus(Request $request, NightSession $session)
@@ -138,7 +131,7 @@ class NightSessionController extends Controller
         $dateFormatted = Carbon::parse($session->session_date)->format('d/m/Y');
         $session->delete();
 
-        return redirect()->route('sessions.index')->with('success', 'La noche del ' . $dateFormatted . ' ha sido eliminada correctamente.');
+        return redirect()->route('sessions.index')->with('success', 'La noche del '.$dateFormatted.' ha sido eliminada correctamente.');
     }
 
     public function consolidatedSummary(Request $request)
@@ -147,7 +140,7 @@ class NightSessionController extends Controller
         if (is_string($sessionIds)) {
             $sessionIds = explode(',', $sessionIds);
         }
-        $sessionIds = array_filter(array_map('intval', (array)$sessionIds));
+        $sessionIds = array_filter(array_map('intval', (array) $sessionIds));
 
         if (empty($sessionIds)) {
             $sessionIds = NightSession::orderByDesc('session_date')->limit(3)->pluck('id')->toArray();

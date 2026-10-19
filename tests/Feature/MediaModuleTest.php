@@ -31,7 +31,7 @@ class MediaModuleTest extends TestCase
         // PNG 1x1 transparente válido
         $pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
         $content = base64_decode($pngBase64);
-        
+
         $tempPath = tempnam(sys_get_temp_dir(), 'test_img_');
         file_put_contents($tempPath, $content);
 
@@ -86,7 +86,7 @@ class MediaModuleTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        
+
         $this->assertDatabaseHas('media_assets', [
             'title' => 'Singani Casa Real',
             'category' => 'drinks',
@@ -207,4 +207,3 @@ class MediaModuleTest extends TestCase
         $this->assertNull($this->user->avatar_url);
     }
 }
-

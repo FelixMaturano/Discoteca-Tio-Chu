@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CashClosing;
 use App\Models\NightSession;
 use App\Models\QrPayment;
 use App\Models\User;
@@ -39,11 +40,15 @@ class QrPaymentTest extends TestCase
         $response->assertStatus(302);
         $response->assertRedirect(route('qrs.index'));
         $response->assertSessionHas('success');
+        $this->assertDatabaseCount('qr_payments', 1);
         $this->assertDatabaseHas('qr_payments', [
             'night_session_id' => $session->id,
+            'point_of_sale' => 'Barra Principal',
+            'operator_name' => 'Operador de prueba',
             'bank_app' => 'YASTA',
             'amount' => '125.50',
             'reference_code' => 'YASTA-REC-001',
+            'is_confirmed' => true,
         ]);
     }
 
@@ -78,53 +83,65 @@ class QrPaymentTest extends TestCase
         $response->assertStatus(302);
         $response->assertRedirect(route('qrs.index'));
         $response->assertSessionHas('success');
+        $this->assertDatabaseCount('qr_payments', 1);
         $this->assertDatabaseHas('qr_payments', [
             'night_session_id' => $session->id,
+            'point_of_sale' => 'Tienda',
+            'operator_name' => 'Operador de prueba',
             'bank_app' => 'YAPE',
             'amount' => '82.00',
             'reference_code' => 'YAPE-REC-002',
+            'is_confirmed' => true,
         ]);
     }
 
-    public function test_tc_h14_03_rechaza_montos_invalidos_y_medio_no_permitido(): void
+    public function test_tc_h14_03_rechaza_montos_invalidos_con_mensaje_controlado(): void
     {
         // Arrange
         $session = $this->createOpenSession();
-        $invalidPayloads = [
-            [
-                'night_session_id' => $session->id,
-                'operator_name' => 'Operador de prueba',
-                'bank_app' => 'YASTA',
-                'amount' => 0,
-                'reference_code' => 'QR-INVALID-001',
-            ],
-            [
-                'night_session_id' => $session->id,
-                'operator_name' => 'Operador de prueba',
-                'bank_app' => 'YAPE',
-                'amount' => -10,
-                'reference_code' => 'QR-INVALID-002',
-            ],
-            [
-                'night_session_id' => $session->id,
-                'operator_name' => 'Operador de prueba',
-                'bank_app' => 'BANCO_INVALIDO',
-                'amount' => 10,
-                'reference_code' => 'QR-INVALID-003',
-            ],
+        $invalidAmounts = [
+            [0, 'El monto cobrado debe ser mayor a 0.', 'QR-INVALID-001'],
+            [-10, 'El monto cobrado debe ser mayor a 0.', 'QR-INVALID-002'],
+            ['no-es-un-monto', 'El monto cobrado debe ser un valor numérico.', 'QR-INVALID-003'],
         ];
 
-        // Act y Assert
-        foreach ($invalidPayloads as $payload) {
-            $response = $this->from(route('qrs.index'))->post(route('qrs.store'), $payload);
+        foreach ($invalidAmounts as [$amount, $expectedMessage, $referenceCode]) {
+            $response = $this->from(route('qrs.index'))->post(route('qrs.store'), [
+                'night_session_id' => $session->id,
+                'point_of_sale' => 'Barra Principal',
+                'operator_name' => 'Operador de prueba',
+                'bank_app' => 'YASTA',
+                'amount' => $amount,
+                'reference_code' => $referenceCode,
+            ]);
 
             $response->assertStatus(302);
             $response->assertRedirect(route('qrs.index'));
-            $response->assertSessionHasErrors(
-                $payload['bank_app'] === 'BANCO_INVALIDO' ? 'bank_app' : 'amount'
-            );
+            $response->assertSessionHasErrors('amount');
+            $response->assertSessionHas('errors', function ($errors) use ($expectedMessage) {
+                return $errors->getBag('default')->first('amount') === $expectedMessage;
+            });
             $this->assertDatabaseCount('qr_payments', 0);
         }
+    }
+
+    public function test_rechaza_una_aplicacion_bancaria_no_permitida(): void
+    {
+        $session = $this->createOpenSession();
+
+        $response = $this->from(route('qrs.index'))->post(route('qrs.store'), [
+            'night_session_id' => $session->id,
+            'point_of_sale' => 'Barra Principal',
+            'operator_name' => 'Operador de prueba',
+            'bank_app' => 'BANCO_INVALIDO',
+            'amount' => 10,
+            'reference_code' => 'QR-INVALID-BANK-001',
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertRedirect(route('qrs.index'));
+        $response->assertSessionHasErrors('bank_app');
+        $this->assertDatabaseCount('qr_payments', 0);
     }
 
     public function test_tc_h14_04_rechaza_el_mismo_comprobante_y_no_duplica_el_cobro(): void
@@ -144,6 +161,11 @@ class QrPaymentTest extends TestCase
         $firstResponse = $this->from(route('qrs.index'))->post(route('qrs.store'), $payload);
         $firstResponse->assertStatus(302);
         $firstResponse->assertSessionHas('success');
+        $this->assertDatabaseCount('qr_payments', 1);
+        $this->assertSame(
+            45.0,
+            (float) CashClosing::where('night_session_id', $session->id)->value('total_qr_yasta')
+        );
 
         $secondResponse = $this->from(route('qrs.index'))->post(route('qrs.store'), $payload);
 
@@ -151,14 +173,16 @@ class QrPaymentTest extends TestCase
         $secondResponse->assertStatus(302);
         $secondResponse->assertRedirect(route('qrs.index'));
         $secondResponse->assertSessionHasErrors('reference_code');
-        $this->assertSame(
-            1,
-            QrPayment::where('reference_code', 'YASTA-REC-IDEMP-001')->count()
-        );
+        $this->assertSame(1, QrPayment::where('reference_code', 'YASTA-REC-IDEMP-001')->count());
+        $this->assertDatabaseCount('qr_payments', 1);
         $this->assertDatabaseHas('qr_payments', [
             'night_session_id' => $session->id,
             'reference_code' => 'YASTA-REC-IDEMP-001',
         ]);
+        $this->assertSame(
+            45.0,
+            (float) CashClosing::where('night_session_id', $session->id)->value('total_qr_yasta')
+        );
     }
 
     private function createOpenSession(): NightSession

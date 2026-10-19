@@ -11,6 +11,7 @@ use App\Http\Controllers\NightSessionController;
 use App\Http\Controllers\PaymentHistoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QrPaymentController;
+use App\Http\Controllers\ServerTunnelController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StaffPaymentController;
 use App\Http\Controllers\StoreSaleController;
@@ -23,6 +24,7 @@ Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
+
     return redirect()->route('login');
 })->name('root');
 
@@ -140,13 +142,12 @@ Route::middleware('auth')->group(function () {
 
     // 12. Control del Servidor Remoto (Túnel Ngrok para Móviles e Internet)
     Route::prefix('server')->name('server.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\ServerTunnelController::class, 'index'])->name('index');
-        Route::get('/status', [\App\Http\Controllers\ServerTunnelController::class, 'status'])->name('status');
-        Route::post('/toggle', [\App\Http\Controllers\ServerTunnelController::class, 'toggle'])->name('toggle');
-        Route::post('/start', [\App\Http\Controllers\ServerTunnelController::class, 'start'])->name('start');
-        Route::post('/stop', [\App\Http\Controllers\ServerTunnelController::class, 'stop'])->name('stop');
-        Route::post('/save-token', [\App\Http\Controllers\ServerTunnelController::class, 'saveToken'])->name('save_token');
+        Route::get('/', [ServerTunnelController::class, 'index'])->name('index');
+        Route::get('/status', [ServerTunnelController::class, 'status'])->name('status');
+        Route::post('/toggle', [ServerTunnelController::class, 'toggle'])->name('toggle');
+        Route::post('/start', [ServerTunnelController::class, 'start'])->name('start');
+        Route::post('/stop', [ServerTunnelController::class, 'stop'])->name('stop');
+        Route::post('/save-token', [ServerTunnelController::class, 'saveToken'])->name('save_token');
     });
 
 });
-

@@ -62,7 +62,7 @@ class InvoiceController extends Controller
     public function store(Request $request)
     {
         $session = NightSession::findOrFail($request->night_session_id);
-        if (!$session->isOpen()) {
+        if (! $session->isOpen()) {
             return back()->with('error', 'No se pueden registrar facturas en una noche cerrada.');
         }
 
@@ -82,13 +82,13 @@ class InvoiceController extends Controller
         $commissionRate = $validated['commission_rate'] ?? $session->pos_commission_rate;
 
         // Normalizar nombre de barra
-        $barName = match(mb_strtolower(trim($validated['bar_name'] ?? 'Principal'))) {
+        $barName = match (mb_strtolower(trim($validated['bar_name'] ?? 'Principal'))) {
             'subterraneo', 'subte', 'subterráneo' => 'Subterráneo',
             'tienda' => 'Tienda',
             default => 'Principal',
         };
 
-        $invoice = new Invoice();
+        $invoice = new Invoice;
         $invoice->night_session_id = $session->id;
         $invoice->correlative_num = $correlativeNum;
         $invoice->payment_method = $validated['payment_method'];
@@ -109,16 +109,17 @@ class InvoiceController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Factura #' . $invoice->correlative_num . ' registrada.');
+        return back()->with('success', 'Factura #'.$invoice->correlative_num.' registrada.');
     }
 
     public function destroy(Invoice $invoice, Request $request)
     {
         $session = $invoice->nightSession;
-        if ($session && !$session->isOpen()) {
+        if ($session && ! $session->isOpen()) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['error' => 'No se pueden eliminar facturas de una noche cerrada.'], 422);
             }
+
             return back()->with('error', 'No se pueden eliminar facturas de una noche cerrada.');
         }
 

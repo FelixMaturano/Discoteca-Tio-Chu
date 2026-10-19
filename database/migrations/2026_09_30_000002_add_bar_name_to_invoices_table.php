@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('invoices', 'bar_name')) {
+        if (! Schema::hasColumn('invoices', 'bar_name')) {
             Schema::table('invoices', function (Blueprint $table) {
                 $table->string('bar_name')->default('Principal')->after('payment_method');
             });

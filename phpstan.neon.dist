@@ -1,0 +1,14 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - app/Http/Controllers/NightSessionController.php
+        - app/Http/Controllers/ProductController.php
+        - app/Http/Controllers/BarInventoryController.php
+        - app/Http/Controllers/StaffController.php
+        - app/Models/NightSession.php
+        - app/Models/Product.php
+        - app/Models/BarSale.php
+        - app/Models/Staff.php

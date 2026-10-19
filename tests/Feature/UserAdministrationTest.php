@@ -38,14 +38,14 @@ class UserAdministrationTest extends TestCase
     public function test_admin_can_create_new_user_and_new_user_can_login(): void
     {
         $response = $this->actingAs($this->admin)->post(route('users.store'), [
-            'name'     => 'Ariel Subterráneo',
-            'email'    => 'ariel@tiochu.com',
+            'name' => 'Ariel Subterráneo',
+            'email' => 'ariel@tiochu.com',
             'password' => 'barrabar123',
         ]);
 
         $response->assertSessionHas('success');
         $this->assertDatabaseHas('users', [
-            'name'  => 'Ariel Subterráneo',
+            'name' => 'Ariel Subterráneo',
             'email' => 'ariel@tiochu.com',
         ]);
 
@@ -55,7 +55,7 @@ class UserAdministrationTest extends TestCase
 
         // Probar que este nuevo usuario puede iniciar sesión en el sistema
         $loginResponse = $this->post(route('login'), [
-            'email'    => 'ariel@tiochu.com',
+            'email' => 'ariel@tiochu.com',
             'password' => 'barrabar123',
         ]);
 
@@ -66,14 +66,14 @@ class UserAdministrationTest extends TestCase
     public function test_admin_can_update_user_details_and_password(): void
     {
         $targetUser = User::create([
-            'name'     => 'Kelly Principal',
-            'email'    => 'kelly@tiochu.com',
+            'name' => 'Kelly Principal',
+            'email' => 'kelly@tiochu.com',
             'password' => Hash::make('oldpassword'),
         ]);
 
         $response = $this->actingAs($this->admin)->put(route('users.update', $targetUser), [
-            'name'     => 'Kelly Administradora Barra',
-            'email'    => 'kelly_barra@tiochu.com',
+            'name' => 'Kelly Administradora Barra',
+            'email' => 'kelly_barra@tiochu.com',
             'password' => 'newpassword123',
         ]);
 
@@ -94,8 +94,8 @@ class UserAdministrationTest extends TestCase
 
         // Intento de eliminar a Don Ludo desde otro usuario
         $otherAdmin = User::create([
-            'name'     => 'Admin 2',
-            'email'    => 'admin2@tiochu.com',
+            'name' => 'Admin 2',
+            'email' => 'admin2@tiochu.com',
             'password' => Hash::make('pass12345'),
         ]);
 
@@ -107,8 +107,8 @@ class UserAdministrationTest extends TestCase
     public function test_can_delete_auxiliary_user(): void
     {
         $aux = User::create([
-            'name'     => 'Temporal',
-            'email'    => 'temp@tiochu.com',
+            'name' => 'Temporal',
+            'email' => 'temp@tiochu.com',
             'password' => Hash::make('password123'),
         ]);
 

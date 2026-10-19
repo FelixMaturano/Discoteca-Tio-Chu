@@ -25,8 +25,8 @@ class MediaController extends Controller
         }
 
         $mediaAssets = $query->orderBy('is_system', 'desc')
-                            ->orderBy('created_at', 'desc')
-                            ->get();
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         $systemLogo = MediaAsset::where('system_key', 'logo')->first();
         $systemBackground = MediaAsset::where('system_key', 'login_background')->first();
@@ -64,23 +64,23 @@ class MediaController extends Controller
         $file = $request->file('image');
         $galleryDir = public_path('images/gallery');
 
-        if (!File::isDirectory($galleryDir)) {
+        if (! File::isDirectory($galleryDir)) {
             File::makeDirectory($galleryDir, 0755, true);
         }
 
         $extension = $file->getClientOriginalExtension();
         $slugTitle = Str::slug($request->input('title'));
-        $filename = ($slugTitle ?: 'media') . '_' . time() . '.' . $extension;
+        $filename = ($slugTitle ?: 'media').'_'.time().'.'.$extension;
         $file->move($galleryDir, $filename);
 
-        $relPath = 'images/gallery/' . $filename;
+        $relPath = 'images/gallery/'.$filename;
         $fullPath = public_path($relPath);
 
         $dimensions = null;
         if (file_exists($fullPath)) {
             $imageInfo = @getimagesize($fullPath);
             if ($imageInfo) {
-                $dimensions = $imageInfo[0] . 'x' . $imageInfo[1];
+                $dimensions = $imageInfo[0].'x'.$imageInfo[1];
             }
         }
 
@@ -113,7 +113,7 @@ class MediaController extends Controller
         if ($media->is_system) {
             // Activo oficial del sistema
             $destinationPath = public_path($media->path);
-            
+
             // Si es el logo oficial y se sube otro formato, lo convertimos o guardamos directamente
             $file->move(dirname($destinationPath), basename($destinationPath));
 
@@ -121,7 +121,7 @@ class MediaController extends Controller
             if (file_exists($destinationPath)) {
                 $imageInfo = @getimagesize($destinationPath);
                 if ($imageInfo) {
-                    $dimensions = $imageInfo[0] . 'x' . $imageInfo[1];
+                    $dimensions = $imageInfo[0].'x'.$imageInfo[1];
                 }
             }
 
@@ -137,7 +137,7 @@ class MediaController extends Controller
 
         // Activo común de la galería
         $galleryDir = public_path('images/gallery');
-        if (!File::isDirectory($galleryDir)) {
+        if (! File::isDirectory($galleryDir)) {
             File::makeDirectory($galleryDir, 0755, true);
         }
 
@@ -149,17 +149,17 @@ class MediaController extends Controller
 
         $extension = $file->getClientOriginalExtension();
         $slugTitle = Str::slug($media->title);
-        $filename = ($slugTitle ?: 'media') . '_' . time() . '.' . $extension;
+        $filename = ($slugTitle ?: 'media').'_'.time().'.'.$extension;
         $file->move($galleryDir, $filename);
 
-        $relPath = 'images/gallery/' . $filename;
+        $relPath = 'images/gallery/'.$filename;
         $fullPath = public_path($relPath);
 
         $dimensions = null;
         if (file_exists($fullPath)) {
             $imageInfo = @getimagesize($fullPath);
             if ($imageInfo) {
-                $dimensions = $imageInfo[0] . 'x' . $imageInfo[1];
+                $dimensions = $imageInfo[0].'x'.$imageInfo[1];
             }
         }
 
@@ -188,7 +188,7 @@ class MediaController extends Controller
         $target = $request->input('target');
         $sourcePath = public_path($media->path);
 
-        if (!File::exists($sourcePath)) {
+        if (! File::exists($sourcePath)) {
             return back()->withErrors(['target' => 'El archivo de origen no existe en el servidor.']);
         }
 
@@ -196,18 +196,18 @@ class MediaController extends Controller
         if ($target === 'avatar') {
             $user = $request->user();
             $avatarDir = public_path('images/avatars');
-            if (!File::isDirectory($avatarDir)) {
+            if (! File::isDirectory($avatarDir)) {
                 File::makeDirectory($avatarDir, 0755, true);
             }
 
             $extension = pathinfo($sourcePath, PATHINFO_EXTENSION);
-            $filename = 'user_' . $user->id . '_' . time() . '.' . $extension;
-            $destination = $avatarDir . DIRECTORY_SEPARATOR . $filename;
+            $filename = 'user_'.$user->id.'_'.time().'.'.$extension;
+            $destination = $avatarDir.DIRECTORY_SEPARATOR.$filename;
 
             File::copy($sourcePath, $destination);
 
             $user->update([
-                'avatar' => 'images/avatars/' . $filename,
+                'avatar' => 'images/avatars/'.$filename,
             ]);
 
             return back()->with('status', 'Foto de perfil actualizada correctamente.');
@@ -223,7 +223,7 @@ class MediaController extends Controller
         $systemAsset = MediaAsset::where('system_key', $target)->first();
         if ($systemAsset) {
             $imageInfo = @getimagesize($targetPathFull);
-            $dimensions = $imageInfo ? ($imageInfo[0] . 'x' . $imageInfo[1]) : null;
+            $dimensions = $imageInfo ? ($imageInfo[0].'x'.$imageInfo[1]) : null;
 
             $systemAsset->update([
                 'file_size' => filesize($targetPathFull),
@@ -233,6 +233,7 @@ class MediaController extends Controller
         }
 
         $label = $target === 'logo' ? 'Logo Oficial de Tío Chu' : 'Fondo del Inicio de Sesión';
+
         return redirect()->route('media.index')
             ->with('status', "{$label} actualizado correctamente.");
     }
@@ -249,7 +250,7 @@ class MediaController extends Controller
         $file = $request->file('avatar');
         $avatarDir = public_path('images/avatars');
 
-        if (!File::isDirectory($avatarDir)) {
+        if (! File::isDirectory($avatarDir)) {
             File::makeDirectory($avatarDir, 0755, true);
         }
 
@@ -261,10 +262,10 @@ class MediaController extends Controller
         }
 
         $extension = $file->getClientOriginalExtension();
-        $filename = 'user_' . $user->id . '_' . time() . '.' . $extension;
+        $filename = 'user_'.$user->id.'_'.time().'.'.$extension;
         $file->move($avatarDir, $filename);
 
-        $relPath = 'images/avatars/' . $filename;
+        $relPath = 'images/avatars/'.$filename;
 
         $user->update([
             'avatar' => $relPath,
@@ -319,7 +320,7 @@ class MediaController extends Controller
         // 1. Logo Oficial
         $logoPath = 'images/LogoTioChu.png';
         $logoFull = public_path($logoPath);
-        if (!MediaAsset::where('system_key', 'logo')->exists() && File::exists($logoFull)) {
+        if (! MediaAsset::where('system_key', 'logo')->exists() && File::exists($logoFull)) {
             $info = @getimagesize($logoFull);
             MediaAsset::create([
                 'title' => 'Logo Oficial Tío Chu',
@@ -329,7 +330,7 @@ class MediaController extends Controller
                 'is_system' => true,
                 'system_key' => 'logo',
                 'file_size' => filesize($logoFull),
-                'dimensions' => $info ? ($info[0] . 'x' . $info[1]) : null,
+                'dimensions' => $info ? ($info[0].'x'.$info[1]) : null,
                 'mime_type' => 'image/png',
             ]);
         }
@@ -337,7 +338,7 @@ class MediaController extends Controller
         // 2. Fondo de Login
         $bgPath = 'images/fondoTioChuLogo.png';
         $bgFull = public_path($bgPath);
-        if (!MediaAsset::where('system_key', 'login_background')->exists() && File::exists($bgFull)) {
+        if (! MediaAsset::where('system_key', 'login_background')->exists() && File::exists($bgFull)) {
             $info = @getimagesize($bgFull);
             MediaAsset::create([
                 'title' => 'Fondo Inicio de Sesión',
@@ -347,7 +348,7 @@ class MediaController extends Controller
                 'is_system' => true,
                 'system_key' => 'login_background',
                 'file_size' => filesize($bgFull),
-                'dimensions' => $info ? ($info[0] . 'x' . $info[1]) : null,
+                'dimensions' => $info ? ($info[0].'x'.$info[1]) : null,
                 'mime_type' => 'image/png',
             ]);
         }

@@ -41,7 +41,7 @@ class Invoice extends Model
     public function calculateNet(): void
     {
         if ($this->payment_method === 'tarjeta') {
-            $this->commission_amount = round($this->amount * (float)$this->commission_rate, 2);
+            $this->commission_amount = round($this->amount * (float) $this->commission_rate, 2);
             $this->net_amount = round($this->amount - $this->commission_amount, 2);
         } else {
             $this->commission_amount = 0;
