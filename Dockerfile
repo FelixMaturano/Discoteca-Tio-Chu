@@ -33,5 +33,9 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.
 # Instalar dependencias de Composer
 RUN composer install --no-dev --optimize-autoloader
 
+# Limpiar cachés de configuración y rutas
+RUN php artisan config:clear || true
+RUN php artisan route:clear || true
+
 EXPOSE 80
 CMD ["apache2-foreground"]
