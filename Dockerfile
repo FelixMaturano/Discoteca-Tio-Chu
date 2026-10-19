@@ -39,4 +39,4 @@ RUN composer install --no-dev --optimize-autoloader
 
 # 9. Ejecutar migraciones e inicio de Apache
 EXPOSE 80
-CMD ["sh", "-c", "php artisan migrate --force && apache2-foreground"]
+CMD ["sh", "-c", "php artisan migrate --seed --force && apache2-foreground"]
