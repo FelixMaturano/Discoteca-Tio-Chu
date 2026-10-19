@@ -1,0 +1,49 @@
+name: CI Pipeline - Tio Chu App
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  lint-and-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Entorno PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Dependencias de Composer
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Instalar Dependencias NPM
+        run: npm ci
+
+      - name: Preparar Entorno de Laravel (.env)
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Formato de Código (Laravel Pint)
+        run: ./vendor/bin/pint --test
+
+      - name: Pruebas Unitarias e Integración (PHPUnit)
+        run: php artisan test
+
+      - name: Pruebas E2E (Cypress)
+        run: |
+          php artisan serve --port=8000 &
+          npx cypress run
