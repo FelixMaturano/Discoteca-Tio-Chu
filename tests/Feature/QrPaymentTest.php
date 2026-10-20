@@ -61,6 +61,11 @@ class QrPaymentTest extends TestCase
         $response->assertOk();
         $response->assertSee('name="reference_code"', false);
         $response->assertSee('Identificador del comprobante');
+        $response->assertSee('name="bank_app" value="YASTA"', false);
+        $response->assertSee('name="bank_app" value="YAPE"', false);
+        $response->assertSee('images/LogosQR/yasta.png');
+        $response->assertSee('images/LogosQR/yape.png');
+        $response->assertSee('name="amount"', false);
     }
 
     public function test_tc_h14_02_registra_cobro_yape_con_monto_valido(): void
