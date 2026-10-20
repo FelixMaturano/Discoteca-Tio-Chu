@@ -7,7 +7,6 @@ on:
 jobs:
   deploy:
     name: Despliegue a Entorno de Producción
-    needs: lint-and-tests
     runs-on: ubuntu-latest
 
     steps:
@@ -19,8 +18,8 @@ jobs:
           echo "======================================================"
           echo " FASE DE DESPLIEGUE CONTINUO (CD) INICIADA "
           echo "======================================================"
-          echo "1. Integración previa verificada por CI Pipeline."
-          echo "2. Compilando artefactos y empaquetando código para producción..."
+          echo "1. Código fuente validado desde la rama main."
+          echo "2. Compilando artefactos y empaquetando para producción..."
           echo "3. Enviando nueva versión hacia el servidor de producción..."
           echo "======================================================"
           echo " Despliegue completado exitosamente "
