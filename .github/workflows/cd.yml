@@ -5,27 +5,20 @@ on:
     branches: [ main ]
 
 jobs:
-  deploy:
-    name: Despliegue a Entorno de Producción
+  deploy-backend:
+    name: Desplegar Servidor Producción
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Código
-        uses: actions/checkout@v4
-
-      - name: Simulación de Despliegue Automático
+      - uses: actions/checkout@v4
+      - name: Simulación de Despliegue Backend
         run: |
-          echo "======================================================"
-          echo " FASE DE DESPLIEGUE CONTINUO (CD) INICIADA "
-          echo "======================================================"
-          echo "1. Código fuente validado desde la rama main."
-          echo "2. Compilando artefactos y empaquetando para producción..."
-          echo "3. Enviando nueva versión hacia el servidor de producción..."
-          echo "======================================================"
-          echo " Despliegue completado exitosamente "
-          echo "======================================================"
+          echo "Empaquetando artefactos y actualizando servidor de producción..."
 
-      - name: Smoke Test (Prueba de Humo en Producción)
+  smoke-test:
+    name: Smoke Test en Producción
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificación de Estado (Healthcheck)
         run: |
-          echo "Ejecutando verificación de estado (Healthcheck)..."
-          echo "Verificando disponibilidad de rutas de producción: HTTP 200 OK"
+          echo "Verificando disponibilidad de la aplicación pública: HTTP 200 OK"

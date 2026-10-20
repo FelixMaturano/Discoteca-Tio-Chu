@@ -7,43 +7,52 @@ on:
     branches: [ develop, main ]
 
 jobs:
-  lint-and-tests:
+  lint-and-format:
+    name: Formato de Código (Laravel Pint)
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, dom, fileinfo
+      - run: composer install --prefer-dist --no-progress --no-interaction
+      - run: ./vendor/bin/pint --test
 
-      - name: Configurar Entorno PHP
-        uses: shivammathur/setup-php@v2
+  phpunit-tests:
+    name: Pruebas Unitarias e Integración (PHPUnit)
+    needs: lint-and-format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite
-          coverage: none
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Instalar Dependencias de Composer
-        run: composer install --prefer-dist --no-progress --no-interaction
-
-      - name: Instalar Dependencias NPM
-        run: npm ci
-
-      - name: Preparar Entorno de Laravel (.env)
-        run: |
+      - run: composer install --prefer-dist --no-progress --no-interaction
+      - run: |
           cp .env.example .env
           php artisan key:generate
+      - run: php artisan test
 
-      - name: Formato de Código (Laravel Pint)
-        run: ./vendor/bin/pint --test
-
-      - name: Pruebas Unitarias e Integración (PHPUnit)
-        run: php artisan test
-
-      - name: Pruebas E2E (Cypress)
-        run: |
+  cypress-e2e:
+    name: Pruebas E2E (Cypress)
+    needs: phpunit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: composer install --prefer-dist --no-progress --no-interaction
+      - run: npm ci
+      - run: |
+          cp .env.example .env
+          php artisan key:generate
+      - run: |
           php artisan serve --port=8000 &
           npx cypress run
