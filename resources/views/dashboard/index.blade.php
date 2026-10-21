@@ -414,7 +414,7 @@
              4. PAGO DE CERVEZA & QR RESTANTE
              ======================================================== -->
         <div class="grid grid-cols-1 xl:grid-cols-[1.2fr_1fr] gap-4">
-            <div class="theme-card p-5 rounded-2xl border theme-border shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-4' : '' }}">
+            {{--  <div class="theme-card p-5 rounded-2xl border theme-border shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-4' : '' }}">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-zinc-800/80">
                     <div>
                         <h2 class="text-xs font-black text-white uppercase tracking-wider font-sans">Pago de Cerveza</h2>
@@ -491,7 +491,7 @@
                         Sin pagos de cerveza registrados aún.
                     </div>
                 @endif
-            </div>
+            </div>--}}
 
             <div class="theme-card p-5 rounded-2xl border theme-border shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-4' : '' }}">
                 <div class="flex items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
@@ -548,7 +548,7 @@
             </div>
         </div>
 
-        <div id="beer-payment-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 px-4">
+        {{-- <div id="beer-payment-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 px-4">
             <div class="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#09090b] p-5 shadow-2xl">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-800/80">
                     <h3 class="text-sm font-black uppercase tracking-wider text-white">Pagar cerveza</h3>
@@ -595,7 +595,7 @@
                     </div>
                 </form>
             </div>
-        </div>
+        </div> --}}
 
         <div id="cash-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 px-4">
             <div class="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#09090b] p-5 shadow-2xl">
@@ -628,11 +628,11 @@
             document.addEventListener('DOMContentLoaded', function () {
                 const beerModal = document.getElementById('beer-payment-modal');
                 const cashModal = document.getElementById('cash-modal');
-                const openBeerButtons = document.querySelectorAll('[data-open-beer-modal]');
-                const closeBeerButtons = document.querySelectorAll('[data-close-beer-modal]');
+                {{--  const openBeerButtons = document.querySelectorAll('[data-open-beer-modal]');
+                const closeBeerButtons = document.querySelectorAll('[data-close-beer-modal]');--}}
                 const openCashButtons = document.querySelectorAll('[data-open-cash-modal]');
                 const closeCashButtons = document.querySelectorAll('[data-close-cash-modal]');
-                const methodSelect = document.getElementById('beer-payment-method');
+                {{--  const methodSelect = document.getElementById('beer-payment-method');
                 const qrProviderWrap = document.getElementById('beer-payment-qr-provider');
 
                 function toggleBeerPaymentFields() {
@@ -656,7 +656,7 @@
                         beerModal.classList.add('hidden');
                         beerModal.classList.remove('flex');
                     });
-                });
+                });--}}
 
                 openCashButtons.forEach((button) => {
                     button.addEventListener('click', function () {
@@ -672,8 +672,8 @@
                     });
                 });
 
-                methodSelect.addEventListener('change', toggleBeerPaymentFields);
-                toggleBeerPaymentFields();
+                {{--  methodSelect.addEventListener('change', toggleBeerPaymentFields);
+                toggleBeerPaymentFields();--}}
             });
         </script>
 

@@ -324,7 +324,7 @@
             </a>
 
             <!-- Historial de Pagos -->
-            <a href="{{ route('paymentHistory.index') }}" 
+           {{--   <a href="{{ route('paymentHistory.index') }}" 
                title="Historial Pagos"
                class="sidebar-item group flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all duration-150 {{ request()->routeIs('paymentHistory.*') ? 'border-[#F5B81C] bg-[#F5B81C] text-black font-extrabold' : 'border-transparent text-zinc-300 font-semibold hover:border-zinc-800 hover:bg-zinc-900/80 hover:text-white' }}">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -337,7 +337,7 @@
                 @if(request()->routeIs('paymentHistory.*'))
                     <span class="sidebar-dot w-1.5 h-1.5 rounded-full bg-black shrink-0"></span>
                 @endif
-            </a>
+            </a>--}}
 
             <!-- Historial Noches -->
             <a href="{{ route('sessions.index') }}" 
@@ -355,7 +355,7 @@
             </a>
 
             <!-- Multimedia -->
-            <a href="{{ route('media.index') }}" 
+            {{-- <a href="{{ route('media.index') }}" 
                title="Multimedia"
                class="sidebar-item group flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all duration-150 {{ request()->routeIs('media.*') ? 'border-[#F5B81C] bg-[#F5B81C] text-black font-extrabold' : 'border-transparent text-zinc-300 font-semibold hover:border-zinc-800 hover:bg-zinc-900/80 hover:text-white' }}">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -369,10 +369,10 @@
                 @if(request()->routeIs('media.*'))
                     <span class="sidebar-dot w-1.5 h-1.5 rounded-full bg-black shrink-0"></span>
                 @endif
-            </a>
+            </a> --}}
 
             <!-- Administración de Usuarios -->
-            <a href="{{ route('users.index') }}" 
+            {{--  <a href="{{ route('users.index') }}" 
                title="Administración de Usuarios"
                class="sidebar-item group flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all duration-150 {{ request()->routeIs('users.*') ? 'border-[#F5B81C] bg-[#F5B81C] text-black font-extrabold' : 'border-transparent text-zinc-300 font-semibold hover:border-zinc-800 hover:bg-zinc-900/80 hover:text-white' }}">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -386,10 +386,10 @@
                 @if(request()->routeIs('users.*'))
                     <span class="sidebar-dot w-1.5 h-1.5 rounded-full bg-black shrink-0"></span>
                 @endif
-            </a>
+            </a>--}}
 
             <!-- Servidor (Acceso Remoto para Celulares) -->
-            <a href="{{ route('server.index') }}" 
+            {{--  <a href="{{ route('server.index') }}" 
                title="Servidor"
                class="sidebar-item group flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all duration-150 {{ request()->routeIs('server.*') ? 'border-[#F5B81C] bg-[#F5B81C] text-black font-extrabold' : 'border-transparent text-zinc-300 font-semibold hover:border-zinc-800 hover:bg-zinc-900/80 hover:text-white' }}">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -404,7 +404,7 @@
                 @if(request()->routeIs('server.*'))
                     <span class="sidebar-dot w-1.5 h-1.5 rounded-full bg-black shrink-0"></span>
                 @endif
-            </a> 
+            </a> --}}
         </div>
 
     </nav>
