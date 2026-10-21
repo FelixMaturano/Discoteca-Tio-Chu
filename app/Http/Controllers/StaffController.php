@@ -230,6 +230,8 @@ class StaffController extends Controller
             'friday_pay' => 'nullable|numeric|min:0',
             'saturday_pay' => 'nullable|numeric|min:0',
             'sunday_pay' => 'nullable|numeric|min:0',
+        ], [
+            'role.in' => 'El cargo seleccionado no es válido.',
         ]);
 
         $validated['works_friday'] = $request->boolean('works_friday', true);
@@ -238,7 +240,8 @@ class StaffController extends Controller
 
         Staff::create($validated);
 
-        return redirect()->route('staff.index');
+        return redirect()->route('staff.index', ['day' => 'todos'])
+            ->with('success', 'Personal registrado correctamente.');
     }
 
     public function edit(Staff $staff)
@@ -258,6 +261,8 @@ class StaffController extends Controller
             'friday_pay' => 'nullable|numeric|min:0',
             'saturday_pay' => 'nullable|numeric|min:0',
             'sunday_pay' => 'nullable|numeric|min:0',
+        ], [
+            'role.in' => 'El cargo seleccionado no es válido.',
         ]);
 
         $validated['works_friday'] = $request->boolean('works_friday');
@@ -273,6 +278,7 @@ class StaffController extends Controller
     {
         $staff->delete();
 
-        return redirect()->route('staff.index');
+        return redirect()->route('staff.index', ['day' => 'todos'])
+            ->with('success', 'Personal eliminado correctamente.');
     }
 }

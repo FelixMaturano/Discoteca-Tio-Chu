@@ -580,13 +580,10 @@
                 </label>
                 <select name="role" id="c_role" required
                         class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-[#F5B81C] transition-all cursor-pointer">
-                    <option value="Mesero">Mesero</option>
-                    <option value="Limpieza">Limpieza</option>
-                    <option value="Seguridad">Seguridad</option>
-                    <option value="Bartender Principal">Bartender Principal</option>
-                    <option value="Bartender Subterráneo">Bartender Subterráneo</option>
-                    <option value="DJ / Sonido">DJ / Sonido</option>
-                    <option value="Administrador">Administrador</option>
+                    <option value="MESERO">Mesero</option>
+                    <option value="LIMPIEZA">Limpieza</option>
+                    <option value="SEGURIDAD">Seguridad</option>
+                    <option value="BARTENDER">Bartender</option>
                 </select>
             </div>
             <div>
@@ -716,13 +713,10 @@
                 </label>
                 <select name="role" id="e_role" required
                         class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-[#F5B81C] transition-all cursor-pointer">
-                    <option value="Mesero">Mesero</option>
-                    <option value="Limpieza">Limpieza</option>
-                    <option value="Seguridad">Seguridad</option>
-                    <option value="Bartender Principal">Bartender Principal</option>
-                    <option value="Bartender Subterráneo">Bartender Subterráneo</option>
-                    <option value="DJ / Sonido">DJ / Sonido</option>
-                    <option value="Administrador">Administrador</option>
+                    <option value="MESERO">Mesero</option>
+                    <option value="LIMPIEZA">Limpieza</option>
+                    <option value="SEGURIDAD">Seguridad</option>
+                    <option value="BARTENDER">Bartender</option>
                 </select>
             </div>
             <div>

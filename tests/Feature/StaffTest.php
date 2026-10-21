@@ -38,7 +38,7 @@ class StaffTest extends TestCase
         $response = $this->post(route('staff.store'), $payload);
 
         // Assert
-        $response->assertRedirect(route('staff.index'));
+        $response->assertRedirect(route('staff.index', ['day' => 'todos']));
         $this->assertDatabaseHas('staff', [
             'name' => 'María Prueba',
             'phone' => '70012345',
@@ -63,7 +63,7 @@ class StaffTest extends TestCase
                 'default_pay' => 100,
             ]);
 
-            $response->assertRedirect(route('staff.index'));
+            $response->assertRedirect(route('staff.index', ['day' => 'todos']));
             $this->assertDatabaseHas('staff', [
                 'name' => 'Trabajador '.$index,
                 'role' => $role,
@@ -166,8 +166,31 @@ class StaffTest extends TestCase
         $response = $this->delete(route('staff.destroy', $staff));
 
         // Assert
-        $response->assertRedirect(route('staff.index'));
+        $response->assertRedirect(route('staff.index', ['day' => 'todos']));
         $this->assertDatabaseMissing('staff', ['id' => $staff->id]);
+    }
+
+    public function test_deleting_staff_only_removes_the_selected_record(): void
+    {
+        // Arrange
+        $selectedStaff = Staff::create([
+            'name' => 'Personal Seleccionado',
+            'role' => 'MESERO',
+            'default_pay' => 100,
+        ]);
+        $otherStaff = Staff::create([
+            'name' => 'Personal Conservado',
+            'role' => 'BARTENDER',
+            'default_pay' => 110,
+        ]);
+
+        // Act
+        $response = $this->delete(route('staff.destroy', $selectedStaff));
+
+        // Assert
+        $response->assertRedirect(route('staff.index', ['day' => 'todos']));
+        $this->assertDatabaseMissing('staff', ['id' => $selectedStaff->id]);
+        $this->assertDatabaseHas('staff', ['id' => $otherStaff->id]);
     }
 
     public function test_staff_create_and_edit_forms_render_canonical_roles(): void
