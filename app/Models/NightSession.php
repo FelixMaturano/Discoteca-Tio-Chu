@@ -33,11 +33,13 @@ class NightSession extends Model
         'day_name',
         'status',
         'pos_commission_rate',
+        'opening_cash',
         'notes',
     ];
 
     protected $casts = [
         'pos_commission_rate' => 'decimal:4',
+        'opening_cash' => 'decimal:2',
     ];
 
     protected function sessionDate(): Attribute

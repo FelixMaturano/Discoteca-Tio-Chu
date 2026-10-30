@@ -91,6 +91,19 @@
         </div>
 
         <div>
+            <label for="opening_cash" class="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-2 font-mono">
+                Efectivo de Apertura <span class="text-[#F5B81C]">*</span>
+            </label>
+            <div class="relative">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#F5B81C]">Bs.</span>
+                <input type="number" step="0.01" min="0" inputmode="decimal" name="opening_cash" id="opening_cash" required
+                       value="{{ old('opening_cash', 0) }}"
+                       class="w-full px-4 pl-10 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-sm font-mono font-bold text-white focus:outline-none focus:border-[#F5B81C] transition-all">
+            </div>
+            <p class="text-[11px] text-zinc-500 mt-1.5">Este importe se resta del efectivo generado durante la noche al calcular el cierre.</p>
+        </div>
+
+        <div>
             <label for="notes" class="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-2 font-mono">
                 Notas del Evento (Opcional)
             </label>

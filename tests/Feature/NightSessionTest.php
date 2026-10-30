@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\BarSale;
 use App\Models\NightSession;
 use App\Models\Product;
 use App\Models\Staff;
 use App\Models\User;
+use App\Services\NightSessionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,6 +46,40 @@ class NightSessionTest extends TestCase
             'session_date' => '2026-03-15',
             'day_name' => 'Domingo',
         ]);
+    }
+
+    public function test_apertura_guarda_efectivo_y_lo_resta_del_efectivo_del_cierre(): void
+    {
+        $response = $this->post(route('sessions.store'), [
+            'session_date' => '2026-03-20',
+            'pos_commission_rate' => 0.013,
+            'opening_cash' => 50,
+        ]);
+
+        $response->assertRedirect(route('sessions.index'));
+        $session = NightSession::whereDate('session_date', '2026-03-20')->firstOrFail();
+        $this->assertSame(50.0, (float) $session->opening_cash);
+
+        $product = Product::create([
+            'name' => 'Producto de prueba',
+            'category' => 'Licores',
+            'sale_price' => 200,
+            'cost_price' => 100,
+            'unit' => 'Botella',
+            'units_per_package' => 6,
+            'is_active' => true,
+        ]);
+        BarSale::create([
+            'night_session_id' => $session->id,
+            'product_id' => $product->id,
+            'bar_name' => 'Barra Principal',
+            'subtotal' => 200,
+            'unit_price' => 200,
+        ]);
+
+        $closing = app(NightSessionService::class)->recalculateClosing($session);
+
+        $this->assertSame(150.0, (float) $closing->total_cash_invoices);
     }
 
     public function test_tc_h2_02_abrir_sesion_en_fecha_limite_de_mes_y_anio_sin_desplazamiento(): void

@@ -128,49 +128,48 @@ class StaffPaymentController extends Controller
 
     public function update(Request $request)
     {
-        if ($request->has('night_session_id')) {
-            $session = NightSession::find($request->input('night_session_id'));
-            if ($session && ! $session->isOpen()) {
-                if ($request->wantsJson() || $request->ajax()) {
-                    return response()->json(['success' => false, 'message' => 'No se pueden modificar pagos en una noche cerrada.'], 422);
-                }
+        $validated = $request->validate([
+            'night_session_id' => 'required|exists:night_sessions,id',
+            'attendances' => 'required|array|min:1',
+            'attendances.*.pay_amount' => 'required|numeric|min:0',
+            'attendances.*.is_paid' => 'nullable|boolean',
+        ]);
 
-                return back()->with('error', 'No se pueden modificar pagos en una noche cerrada.');
+        $session = NightSession::findOrFail($validated['night_session_id']);
+        if (! $session->isOpen()) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No se pueden modificar pagos en una noche cerrada.'], 422);
             }
+
+            return back()->with('error', 'No se pueden modificar pagos en una noche cerrada.');
         }
 
-        $attendancesData = $request->input('attendances', []);
+        $attendancesData = $validated['attendances'];
 
         foreach ($attendancesData as $id => $data) {
             $att = StaffAttendance::find($id);
             if (! $att) {
-                continue;
+                abort(422, 'La asistencia indicada no existe.');
             }
 
             $attendanceSession = $att->nightSession;
-            if ($attendanceSession && ! $attendanceSession->isOpen()) {
-                if ($request->wantsJson() || $request->ajax()) {
-                    return response()->json(['success' => false, 'message' => 'No se pueden modificar pagos en una noche cerrada.'], 422);
-                }
-
-                return back()->with('error', 'No se pueden modificar pagos en una noche cerrada.');
+            if (! $attendanceSession || $attendanceSession->id !== $session->id) {
+                abort(422, 'La asistencia no pertenece a la noche seleccionada.');
             }
 
             $att->update([
                 'pay_amount' => (float) ($data['pay_amount'] ?? 0),
-                'is_paid' => isset($data['is_paid']) && $data['is_paid'] == '1',
+                'is_paid' => (bool) ($data['is_paid'] ?? false),
             ]);
         }
 
-        if (isset($session) && $session) {
-            $this->sessionService->recalculateClosing($session);
-        }
+        $this->sessionService->recalculateClosing($session);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
-                'totalPlanilla' => isset($session) && $session ? (float) $session->staffAttendances()->sum('pay_amount') : 0,
-                'totalPagado' => isset($session) && $session ? (float) $session->staffAttendances()->where('is_paid', true)->sum('pay_amount') : 0,
+                'totalPlanilla' => (float) $session->staffAttendances()->sum('pay_amount'),
+                'totalPagado' => (float) $session->staffAttendances()->where('is_paid', true)->sum('pay_amount'),
             ]);
         }
 

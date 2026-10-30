@@ -16,7 +16,6 @@ class QrPayment extends Model
         'operator_name',
         'bank_app',
         'amount',
-        'reference_code',
         'is_confirmed',
     ];
 

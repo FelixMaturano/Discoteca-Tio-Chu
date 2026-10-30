@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CashClosing;
 use App\Models\NightSession;
+use App\Models\StaffAttendance;
 use Carbon\Carbon;
 
 class NightSessionService
@@ -77,8 +78,9 @@ class NightSessionService
         $cardTienda = (float) $session->invoices()->whereIn('bar_name', ['Tienda', 'tienda'])->where('payment_method', 'tarjeta')->sum('amount');
         $cashTienda = max(0, $salesTienda - $qrTienda - $cardTienda);
 
-        // Efectivo total en Cierre de Caja = Suma de efectivos de las barras y tienda
-        $totalEfectivo = $cashPrincipal + $cashSubte + $cashTienda;
+        // El efectivo de apertura ya estaba en caja y no corresponde a ventas de la noche.
+        $grossCash = $cashPrincipal + $cashSubte + $cashTienda;
+        $totalEfectivo = max(0, $grossCash - (float) $session->opening_cash);
 
         // Ventas totales de referencia (barras + tienda)
         $totalBarSales = $salesPrincipal + $salesSubte + $salesTienda;
@@ -118,6 +120,73 @@ class NightSessionService
         ]);
 
         return $closing;
+    }
+
+    /**
+     * Resume la liquidación por bartender usando el punto de venta asignado.
+     *
+     * @return array<int, array{name: string, bar: string, sold: float, qr: float, card: float, cash: float}>
+     */
+    public function getBartenderSettlements(NightSession $session): array
+    {
+        $barAliases = [
+            'principal' => ['Barra Principal', 'Barra Kelly (Principal)', 'Principal', 'Kelly'],
+            'subte' => ['Barra Subterráneo', 'Barra Ariel (Subte)', 'Subterráneo', 'Subterraneo', 'Subte', 'Ariel'],
+            'tienda' => ['Tienda', 'tienda'],
+        ];
+
+        $barNames = [
+            'principal' => 'Barra Principal',
+            'subte' => 'Barra Subterráneo',
+            'tienda' => 'Tienda',
+        ];
+
+        $totals = [];
+        foreach ($barAliases as $key => $aliases) {
+            $sales = (float) $session->barSales()->whereIn('bar_name', $aliases)->sum('subtotal');
+            if ($key === 'tienda') {
+                $sales += (float) $session->storeSales()->sum('total_price');
+            }
+
+            $qr = (float) $session->qrPayments()->whereIn('point_of_sale', $aliases)->sum('amount');
+            $card = (float) $session->invoices()
+                ->whereIn('bar_name', $aliases)
+                ->where('payment_method', 'tarjeta')
+                ->sum('amount');
+
+            $totals[$key] = [
+                'name' => $barNames[$key],
+                'sold' => round($sales, 2),
+                'qr' => round($qr, 2),
+                'card' => round($card, 2),
+                'cash' => round(max(0, $sales - $qr - $card), 2),
+            ];
+        }
+
+        return StaffAttendance::with('staff')
+            ->where('night_session_id', $session->id)
+            ->whereHas('staff', function ($query) {
+                $query->where('role', 'like', '%bartender%');
+            })
+            ->get()
+            ->map(function (StaffAttendance $attendance) use ($totals): array {
+                $assignedBar = mb_strtolower((string) ($attendance->staff->assigned_bar ?? ''));
+                $barKey = str_contains($assignedBar, 'sub') || str_contains($assignedBar, 'ariel')
+                    ? 'subte'
+                    : (str_contains($assignedBar, 'tienda') ? 'tienda' : 'principal');
+                $bar = $totals[$barKey];
+
+                return [
+                    'name' => $attendance->staff->name,
+                    'bar' => $bar['name'],
+                    'sold' => $bar['sold'],
+                    'qr' => $bar['qr'],
+                    'card' => $bar['card'],
+                    'cash' => $bar['cash'],
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**

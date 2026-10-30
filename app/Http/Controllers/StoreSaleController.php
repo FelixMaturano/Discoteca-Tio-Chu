@@ -86,7 +86,6 @@ class StoreSaleController extends Controller
                     'operator_name' => $cobrante,
                     'bank_app' => $request->input('bank_app', 'YASTA'),
                     'amount' => $qrAmount,
-                    'reference_code' => null,
                     'is_confirmed' => true,
                 ]);
             }

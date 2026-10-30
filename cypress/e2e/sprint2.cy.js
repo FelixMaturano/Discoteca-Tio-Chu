@@ -57,7 +57,7 @@ describe('Sprint 2 - Historias H13, H14, H6 y H4', () => {
                 cy.get('#cobrante-trigger').click();
                 cy.get('.cobrante-item[data-name="KELLY"]').click();
 
-                cy.get('input[name="reference_code"]').type('E2E-H14-YAPE-20261023');
+
                 cy.get('#amount').click('right').type('82.50');
                 cy.intercept('POST', '/qrs').as('createQrCharge');
                 cy.contains('button', 'Cobrar').click();

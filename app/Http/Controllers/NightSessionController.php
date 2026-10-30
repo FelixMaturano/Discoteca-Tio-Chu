@@ -50,6 +50,7 @@ class NightSessionController extends Controller
         $validated = $request->validate([
             'session_date' => 'required|date|unique:night_sessions,session_date',
             'pos_commission_rate' => 'required|numeric|min:0|max:1',
+            'opening_cash' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
         ], [
             'session_date.unique' => 'Ya existe una noche registrada para esta fecha.',
@@ -58,6 +59,7 @@ class NightSessionController extends Controller
         $parsedDate = Carbon::parse($validated['session_date']);
         $validated['day_name'] = NightSession::weekdayNameForDate($validated['session_date']);
         $validated['status'] = 'open';
+        $validated['opening_cash'] = (float) ($validated['opening_cash'] ?? 0);
 
         $session = NightSession::create($validated);
         session(['active_night_session_id' => $session->id]);

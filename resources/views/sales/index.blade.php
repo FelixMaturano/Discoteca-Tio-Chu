@@ -1329,7 +1329,6 @@
                                     <tr>
                                         <th class="px-4 py-2.5">Cobrante</th>
                                         <th class="px-3 py-2.5 text-center">App</th>
-                                        <th class="px-4 py-2.5">Ref / Comprobante</th>
                                         <th class="px-4 py-2.5 text-right">Monto (Bs.)</th>
                                     </tr>
                                 </thead>
@@ -1342,7 +1341,6 @@
                                                     {{ $qr->bank_app }}
                                                 </span>
                                             </td>
-                                            <td class="px-4 py-2 text-zinc-400 text-[11px] truncate max-w-[120px] font-mono">{{ $qr->reference_code ?? '—' }}</td>
                                             <td class="px-4 py-2 text-right font-bold font-mono text-blue-400">Bs. {{ number_format($qr->amount, 2) }}</td>
                                         </tr>
                                     @empty

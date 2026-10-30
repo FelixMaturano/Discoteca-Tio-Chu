@@ -418,13 +418,6 @@ props.put(&apos;sprint2_session_id&apos;, id)</stringProp>
                 <boolProp name="HTTPArgument.use_equals">true</boolProp>
                 <stringProp name="Argument.name">amount</stringProp>
               </elementProp>
-              <elementProp name="reference_code" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">true</boolProp>
-                <stringProp name="Argument.value">JM-${__UUID()}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-                <boolProp name="HTTPArgument.use_equals">true</boolProp>
-                <stringProp name="Argument.name">reference_code</stringProp>
-              </elementProp>
             </collectionProp>
           </elementProp>
         </HTTPSamplerProxy>

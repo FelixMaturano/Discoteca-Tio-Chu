@@ -123,6 +123,21 @@ class PaymentHistoryController extends Controller
      */
     public function paySingle(Request $request, StaffAttendance $attendance)
     {
+        if ($attendance->is_paid) {
+            $message = 'El jornal ya estaba pagado.';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'alreadyPaid' => true,
+                    'message' => $message,
+                    'workerName' => $attendance->staff->name ?? 'Personal',
+                    'amount' => (float) $attendance->pay_amount,
+                ]);
+            }
+
+            return back()->with('success', $message);
+        }
+
         $attendance->update([
             'is_paid' => true,
         ]);

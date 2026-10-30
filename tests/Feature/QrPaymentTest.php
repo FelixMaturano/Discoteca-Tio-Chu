@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\CashClosing;
 use App\Models\NightSession;
-use App\Models\QrPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -30,7 +29,6 @@ class QrPaymentTest extends TestCase
             'operator_name' => 'Operador de prueba',
             'bank_app' => 'YASTA',
             'amount' => 125.50,
-            'reference_code' => 'YASTA-REC-001',
         ];
 
         // Act
@@ -47,20 +45,19 @@ class QrPaymentTest extends TestCase
             'operator_name' => 'Operador de prueba',
             'bank_app' => 'YASTA',
             'amount' => '125.50',
-            'reference_code' => 'YASTA-REC-001',
             'is_confirmed' => true,
         ]);
     }
 
-    public function test_formulario_qr_incluye_el_identificador_del_comprobante(): void
+    public function test_formulario_qr_solo_requiere_datos_operativos(): void
     {
         $this->createOpenSession();
 
         $response = $this->get(route('qrs.index'));
 
         $response->assertOk();
-        $response->assertSee('name="reference_code"', false);
-        $response->assertSee('Identificador del comprobante');
+        $response->assertDontSee('name="reference_code"', false);
+        $response->assertDontSee('Identificador del comprobante');
         $response->assertSee('name="bank_app" value="YASTA"', false);
         $response->assertSee('name="bank_app" value="YAPE"', false);
         $response->assertSee('images/LogosQR/yasta.png');
@@ -78,7 +75,6 @@ class QrPaymentTest extends TestCase
             'operator_name' => 'Operador de prueba',
             'bank_app' => 'YAPE',
             'amount' => 82.00,
-            'reference_code' => 'YAPE-REC-002',
         ];
 
         // Act
@@ -95,7 +91,6 @@ class QrPaymentTest extends TestCase
             'operator_name' => 'Operador de prueba',
             'bank_app' => 'YAPE',
             'amount' => '82.00',
-            'reference_code' => 'YAPE-REC-002',
             'is_confirmed' => true,
         ]);
     }
@@ -105,19 +100,18 @@ class QrPaymentTest extends TestCase
         // Arrange
         $session = $this->createOpenSession();
         $invalidAmounts = [
-            [0, 'El monto cobrado debe ser mayor a 0.', 'QR-INVALID-001'],
-            [-10, 'El monto cobrado debe ser mayor a 0.', 'QR-INVALID-002'],
-            ['no-es-un-monto', 'El monto cobrado debe ser un valor numérico.', 'QR-INVALID-003'],
+            [0, 'El monto cobrado debe ser mayor a 0.'],
+            [-10, 'El monto cobrado debe ser mayor a 0.'],
+            ['no-es-un-monto', 'El monto cobrado debe ser un valor numérico.'],
         ];
 
-        foreach ($invalidAmounts as [$amount, $expectedMessage, $referenceCode]) {
+        foreach ($invalidAmounts as [$amount, $expectedMessage]) {
             $response = $this->from(route('qrs.index'))->post(route('qrs.store'), [
                 'night_session_id' => $session->id,
                 'point_of_sale' => 'Barra Principal',
                 'operator_name' => 'Operador de prueba',
                 'bank_app' => 'YASTA',
                 'amount' => $amount,
-                'reference_code' => $referenceCode,
             ]);
 
             $response->assertStatus(302);
@@ -140,7 +134,6 @@ class QrPaymentTest extends TestCase
             'operator_name' => 'Operador de prueba',
             'bank_app' => 'BANCO_INVALIDO',
             'amount' => 10,
-            'reference_code' => 'QR-INVALID-BANK-001',
         ]);
 
         $response->assertStatus(302);
@@ -149,7 +142,7 @@ class QrPaymentTest extends TestCase
         $this->assertDatabaseCount('qr_payments', 0);
     }
 
-    public function test_tc_h14_04_rechaza_el_mismo_comprobante_y_no_duplica_el_cobro(): void
+    public function test_tc_h14_04_permite_registrar_cobros_sin_identificador(): void
     {
         // Arrange
         $session = $this->createOpenSession();
@@ -159,30 +152,20 @@ class QrPaymentTest extends TestCase
             'operator_name' => 'Operador de prueba',
             'bank_app' => 'YASTA',
             'amount' => 45.00,
-            'reference_code' => 'YASTA-REC-IDEMP-001',
         ];
 
-        // Act: enviar dos veces el mismo comprobante
-        $firstResponse = $this->from(route('qrs.index'))->post(route('qrs.store'), $payload);
-        $firstResponse->assertStatus(302);
-        $firstResponse->assertSessionHas('success');
+        $response = $this->from(route('qrs.index'))->post(route('qrs.store'), $payload);
+        $response->assertStatus(302);
+        $response->assertSessionHas('success');
         $this->assertDatabaseCount('qr_payments', 1);
         $this->assertSame(
             45.0,
             (float) CashClosing::where('night_session_id', $session->id)->value('total_qr_yasta')
         );
 
-        $secondResponse = $this->from(route('qrs.index'))->post(route('qrs.store'), $payload);
-
-        // Assert
-        $secondResponse->assertStatus(302);
-        $secondResponse->assertRedirect(route('qrs.index'));
-        $secondResponse->assertSessionHasErrors('reference_code');
-        $this->assertSame(1, QrPayment::where('reference_code', 'YASTA-REC-IDEMP-001')->count());
-        $this->assertDatabaseCount('qr_payments', 1);
         $this->assertDatabaseHas('qr_payments', [
             'night_session_id' => $session->id,
-            'reference_code' => 'YASTA-REC-IDEMP-001',
+            'amount' => '45.00',
         ]);
         $this->assertSame(
             45.0,

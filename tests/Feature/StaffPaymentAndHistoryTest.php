@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Invoice;
 use App\Models\NightSession;
 use App\Models\QrPayment;
+use App\Models\Staff;
 use App\Models\StaffAttendance;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -97,6 +98,49 @@ class StaffPaymentAndHistoryTest extends TestCase
 
         $att->refresh();
         $this->assertTrue((bool) $att->is_paid);
+    }
+
+    public function test_closing_displays_bartender_settlement_by_bar(): void
+    {
+        $session = NightSession::first();
+        $bartender = Staff::where('role', 'like', '%Bartender%')->first();
+        $this->assertNotNull($bartender);
+
+        StaffAttendance::firstOrCreate(
+            ['night_session_id' => $session->id, 'staff_id' => $bartender->id],
+            ['pay_amount' => 100, 'is_paid' => false]
+        );
+        $barSale = $session->barSales()->where('bar_name', 'Barra Principal')->first();
+        $this->assertNotNull($barSale);
+
+        $barSale->update(['subtotal' => 100]);
+        QrPayment::create([
+            'night_session_id' => $session->id,
+            'point_of_sale' => 'Barra Principal',
+            'operator_name' => $bartender->name,
+            'bank_app' => 'YASTA',
+            'amount' => 20,
+            'is_confirmed' => true,
+        ]);
+        Invoice::create([
+            'night_session_id' => $session->id,
+            'correlative_num' => 900,
+            'payment_method' => 'tarjeta',
+            'bar_name' => 'Barra Principal',
+            'amount' => 30,
+            'commission_rate' => 0.013,
+            'commission_amount' => 0.39,
+            'net_amount' => 29.61,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('closing.index', ['session_id' => $session->id]));
+
+        $response->assertOk();
+        $response->assertSee($bartender->name);
+        $response->assertSee('Bs. 100.00');
+        $response->assertSee('Bs. 20.00');
+        $response->assertSee('Bs. 30.00');
+        $response->assertSee('Bs. 50.00');
     }
 
     public function test_can_register_invoice_with_selected_bar(): void

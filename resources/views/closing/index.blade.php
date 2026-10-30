@@ -313,10 +313,19 @@
                         <div class="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between hover:border-zinc-700 transition-colors">
                             <div>
                                 <span class="text-sm font-bold text-white block">Efectivo en Mano</span>
-                                <span class="text-[11px] text-zinc-400 font-medium">Barras y Tienda</span>
+                                <span class="text-[11px] text-zinc-400 font-medium">Ventas menos efectivo de apertura</span>
                             </div>
                             <span class="font-mono font-black text-white text-base">
                                 Bs. {{ number_format($closing->total_cash_invoices ?? 0, 2) }}
+                            </span>
+                        </div>
+                        <div class="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-bold text-white block">Efectivo de Apertura</span>
+                                <span class="text-[11px] text-zinc-400 font-medium">Importe ingresado al abrir la noche</span>
+                            </div>
+                            <span class="font-mono font-black text-[#F5B81C] text-base">
+                                Bs. {{ number_format($session->opening_cash ?? 0, 2) }}
                             </span>
                         </div>
                     </div>
@@ -423,6 +432,34 @@
                             <span class="group-hover:translate-x-1 transition-transform font-bold">&rarr;</span>
                         </div>
                     </button>
+                </div>
+
+                <!-- TARJETA: LIQUIDACIÓN POR BARTENDER (H5) -->
+                <div class="theme-card p-5 rounded-2xl border theme-border shadow-sm space-y-3.5">
+                    <div class="flex items-center justify-between pb-2 border-b theme-border">
+                        <div>
+                            <span class="text-sm font-black uppercase tracking-wider text-white">Liquidación por bartender</span>
+                            <span class="block text-[11px] text-zinc-500 mt-1">Ventas, QR, tarjetas y efectivo neto por barra</span>
+                        </div>
+                        <span class="text-xs font-mono font-bold text-[#F5B81C]">{{ count($bartenderSettlements) }} bartender(s)</span>
+                    </div>
+
+                    @forelse($bartenderSettlements as $settlement)
+                        <div class="rounded-xl bg-zinc-950 border border-zinc-800/80 p-3 space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-xs font-black text-white uppercase truncate">{{ $settlement['name'] }}</span>
+                                <span class="text-[10px] font-bold text-zinc-400 uppercase">{{ $settlement['bar'] }}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-[11px]">
+                                <span class="text-zinc-400">Vendido <strong class="text-white font-mono">Bs. {{ number_format($settlement['sold'], 2) }}</strong></span>
+                                <span class="text-zinc-400">QR <strong class="text-white font-mono">Bs. {{ number_format($settlement['qr'], 2) }}</strong></span>
+                                <span class="text-zinc-400">Tarjeta <strong class="text-white font-mono">Bs. {{ number_format($settlement['card'], 2) }}</strong></span>
+                                <span class="text-[#F5B81C]">Efectivo neto <strong class="font-mono">Bs. {{ number_format($settlement['cash'], 2) }}</strong></span>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-xs text-zinc-500 text-center py-3">No hay bartenders asignados a este turno.</p>
+                    @endforelse
                 </div>
 
                 <!-- TARJETA: GASTOS DE LA NOCHE -->

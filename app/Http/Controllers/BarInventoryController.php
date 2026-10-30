@@ -237,9 +237,24 @@ class BarInventoryController extends Controller
      */
     public function syncFromPreviousNight(Request $request)
     {
-        $sessionId = $request->input('session_id');
-        $selectedBar = $request->input('bar_name');
+        $validated = $request->validate([
+            'session_id' => 'required|exists:night_sessions,id',
+            'bar_name' => [
+                'required',
+                Rule::in([
+                    'Barra Principal', 'Barra Subterráneo', 'Tienda',
+                    'Barra Kelly (Principal)', 'Kelly', 'Principal',
+                    'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo',
+                ]),
+            ],
+        ]);
 
+        $sessionId = (int) $validated['session_id'];
+        $selectedBar = match ($validated['bar_name']) {
+            'Barra Kelly (Principal)', 'Kelly', 'Principal' => 'Barra Principal',
+            'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo' => 'Barra Subterráneo',
+            default => $validated['bar_name'],
+        };
         $session = NightSession::findOrFail($sessionId);
         if (! $session->isOpen()) {
             return back()->with('error', 'La noche está cerrada. No se pueden sincronizar saldos en una noche cerrada.');
@@ -259,31 +274,33 @@ class BarInventoryController extends Controller
             ->where('bar_name', $selectedBar)
             ->get();
 
-        foreach ($allBarSales as $barSale) {
-            $prevSale = BarSale::where('night_session_id', $previousSession->id)
-                ->where('bar_name', $selectedBar)
-                ->where('product_id', $barSale->product_id)
-                ->first();
+        DB::transaction(function () use ($allBarSales, $previousSession, $selectedBar): void {
+            foreach ($allBarSales as $barSale) {
+                $prevSale = BarSale::where('night_session_id', $previousSession->id)
+                    ->where('bar_name', $selectedBar)
+                    ->where('product_id', $barSale->product_id)
+                    ->first();
 
-            $prevSaldo = $prevSale ? (int) $prevSale->saldo : 0;
-            $unitsPerPkg = $barSale->product->units_per_package > 0 ? (int) $barSale->product->units_per_package : 1;
+                $prevSaldo = $prevSale ? (int) $prevSale->saldo : 0;
+                $unitsPerPkg = $barSale->product->units_per_package > 0 ? (int) $barSale->product->units_per_package : 1;
 
-            $initPkg = intdiv($prevSaldo, $unitsPerPkg);
-            $initUnits = $prevSaldo % $unitsPerPkg;
+                $initPkg = intdiv($prevSaldo, $unitsPerPkg);
+                $initUnits = $prevSaldo % $unitsPerPkg;
 
-            $barSale->initial_packages = $initPkg;
-            $barSale->initial_units = $initUnits;
-            $barSale->packages = $initPkg + (int) $barSale->added_packages + (int) $barSale->night_packages;
-            $barSale->units = $initUnits + (int) $barSale->added_units + (int) $barSale->night_units;
-            $barSale->total_initial = ($barSale->packages * $unitsPerPkg) + $barSale->units;
-            // El Saldo Cierre de la nueva noche se mantiene siempre en 0
-            $barSale->saldo = 0;
-            $barSale->vendido = max(0, $barSale->total_initial - (int) $barSale->saldo);
-            if ($barSale->product->category !== 'Mixers') {
-                $barSale->subtotal = $barSale->vendido * (float) $barSale->unit_price;
+                $barSale->initial_packages = $initPkg;
+                $barSale->initial_units = $initUnits;
+                $barSale->packages = $initPkg + (int) $barSale->added_packages + (int) $barSale->night_packages;
+                $barSale->units = $initUnits + (int) $barSale->added_units + (int) $barSale->night_units;
+                $barSale->total_initial = ($barSale->packages * $unitsPerPkg) + $barSale->units;
+                // El Saldo Cierre de la nueva noche se mantiene siempre en 0
+                $barSale->saldo = 0;
+                $barSale->vendido = max(0, $barSale->total_initial - (int) $barSale->saldo);
+                if ($barSale->product->category !== 'Mixers') {
+                    $barSale->subtotal = $barSale->vendido * (float) $barSale->unit_price;
+                }
+                $barSale->save();
             }
-            $barSale->save();
-        }
+        });
 
         return back()->with('success', 'Saldos de la noche anterior sincronizados correctamente para '.$selectedBar.'.');
     }

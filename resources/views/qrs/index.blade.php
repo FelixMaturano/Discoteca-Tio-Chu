@@ -243,7 +243,7 @@
                     <!-- 2. APLICACIÓN BANCARIA (SWITCHES MODO IPHONE CON LOGOS) -->
                     <div class="md:col-span-2 space-y-1.5">
                         <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                            Aplicación
+                            Banca
                         </label>
                         <div class="grid grid-cols-2 p-1 rounded-xl bg-zinc-950 border border-zinc-800 text-xs">
                             <!-- YASTA -->
@@ -410,20 +410,8 @@
                         </div>
                     </div>
 
-                    <!-- 4. IDENTIFICADOR DEL COMPROBANTE -->
-                    <div class="md:col-span-3 space-y-1.5">
-                        <label for="reference_code" class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                            Identificador del comprobante
-                        </label>
-                        <input type="text" name="reference_code" id="reference_code" value="{{ old('reference_code') }}" maxlength="255" autocomplete="off" required placeholder="ID o número de operación"
-                               class="w-full text-xs font-mono font-bold rounded-xl px-3 py-2.5 bg-zinc-950 border border-zinc-800 text-white focus:outline-none focus:border-[#F5B81C] placeholder:text-zinc-600">
-                        @error('reference_code')
-                            <p class="text-[10px] text-rose-400">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- 5. MONTO COBRADO & BOTÓN AGREGAR -->
-                    <div class="md:col-span-2 space-y-1.5">
+                    <!-- 4. MONTO COBRADO & BOTÓN AGREGAR -->
+                    <div class="md:col-span-5 space-y-1.5">
                         <label for="amount" class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">
                             Monto
                         </label>

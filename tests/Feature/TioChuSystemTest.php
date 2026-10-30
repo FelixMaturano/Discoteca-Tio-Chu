@@ -385,7 +385,6 @@ class TioChuSystemTest extends TestCase
             'cobrante_name' => 'JUAN MOZO',
             'bank_app' => 'YASTA',
             'amount' => 250.00,
-            'reference_code' => 'CMP-TEST-123',
         ]);
 
         $response->assertSessionHas('success');

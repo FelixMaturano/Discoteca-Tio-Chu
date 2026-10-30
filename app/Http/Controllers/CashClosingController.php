@@ -27,6 +27,7 @@ class CashClosingController extends Controller
         $attendances = collect();
         $expenses = collect();
         $availableStaff = collect();
+        $bartenderSettlements = [];
 
         if ($session) {
             $closing = $this->sessionService->recalculateClosing($session);
@@ -60,6 +61,7 @@ class CashClosingController extends Controller
 
                     return $rankA <=> $rankB;
                 })->values();
+            $bartenderSettlements = $this->sessionService->getBartenderSettlements($session);
         }
 
         return view('closing.index', compact(
@@ -68,7 +70,8 @@ class CashClosingController extends Controller
             'closing',
             'attendances',
             'expenses',
-            'availableStaff'
+            'availableStaff',
+            'bartenderSettlements'
         ));
     }
 
