@@ -142,13 +142,12 @@
     @else
 
         <!-- ========================================================
-             2. 4 TARJETAS KPI RESUMEN: MINIMALISTAS & ELEGANTES
+             2. 4 TARJETAS KPI RESUMEN: MINIMALISTAS & ELEGANTES (H9)
              ======================================================== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5" data-cy="executive-kpis-container">
             
             <!-- TARJETA 1: Venta Total en Barras -->
-            {{-- 
-            <div class="theme-card p-4 rounded-2xl border theme-border flex items-center justify-between shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-1' : '' }}">
+            <div data-cy="kpi-venta-barras" class="theme-card p-4 rounded-2xl border theme-border flex items-center justify-between shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-1' : '' }}">
                 <div class="min-w-0">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block truncate">
                         Venta en Barras
@@ -156,7 +155,7 @@
                     <div class="text-2xl font-black text-white font-mono tracking-tight mt-1 truncate">
                         <span class="text-xs font-sans font-bold text-[#F5B81C] mr-0.5">Bs.</span>{{ number_format($barTotal, 2) }}
                     </div>
-                    <span class="text-[10px] text-zinc-500 font-medium block mt-0.5 truncate">Principal y Subterráneo</span>
+                    <span class="text-[10px] text-zinc-500 font-medium block mt-0.5 truncate">Principal, Subte y Tienda</span>
                 </div>
                 <div class="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-300 shrink-0 ml-3">
                     <svg class="w-5 h-5 text-[#F5B81C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -165,33 +164,29 @@
                 </div>
             </div>
 
-            <!-- TARJETA 2: Cobros por Tarjeta (POS) -->
-            <div class="theme-card p-4 rounded-2xl border theme-border flex items-center justify-between shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-2' : '' }}">
+            <!-- TARJETA 2: Tarjetas Neto Banco (POS) -->
+            <div data-cy="kpi-tarjetas-neto" class="theme-card p-4 rounded-2xl border theme-border flex items-center justify-between shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-2' : '' }}">
                 <div class="min-w-0">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block truncate">
-                        Tarjetas (Bruto)
+                        Tarjetas Neto Banco
                     </span>
                     <div class="text-2xl font-black text-white font-mono tracking-tight mt-1 truncate">
-                        <span class="text-xs font-sans font-bold text-[#F5B81C] mr-0.5">Bs.</span>{{ number_format($posGross, 2) }}
+                        <span class="text-xs font-sans font-bold text-[#F5B81C] mr-0.5">Bs.</span>{{ number_format($posNet, 2) }}
                     </div>
                     <span class="text-[10px] text-zinc-500 font-medium block mt-0.5 truncate">
-                        Neto con descuento: Bs. {{ number_format($posNet, 2) }}
-                    </span>
-                    <span class="text-[9px] text-zinc-600 font-medium block mt-0.5 truncate">
-                        Descuento: Bs. {{ number_format($posCommission, 2) }}
+                        Bruto: Bs. {{ number_format($posGross, 2) }} (Com.: Bs. {{ number_format($posCommission, 2) }})
                     </span>
                 </div>
                 <div class="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-300 shrink-0 ml-3">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="w-5 h-5 text-[#F5B81C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect width="20" height="14" x="2" y="5" rx="2"/>
                         <line x1="2" x2="22" y1="10" y2="10"/>
                     </svg>
                 </div>
             </div>
-            --}}
 
             <!-- TARJETA 3: Cobros por QR -->
-            <div class="theme-card p-4 rounded-2xl border theme-border flex items-center justify-between shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-3' : '' }}">
+            <div data-cy="kpi-cobros-qr" class="theme-card p-4 rounded-2xl border theme-border flex items-center justify-between shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-3' : '' }}">
                 <div class="min-w-0">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block truncate">
                         Cobros por QR
@@ -199,10 +194,10 @@
                     <div class="text-2xl font-black text-white font-mono tracking-tight mt-1 truncate">
                         <span class="text-xs font-sans font-bold text-[#F5B81C] mr-0.5">Bs.</span>{{ number_format($qrTotal, 2) }}
                     </div>
-                    <span class="text-[10px] text-zinc-500 font-medium block mt-0.5 truncate">Yasta y Yape</span>
+                    <span class="text-[10px] text-zinc-500 font-medium block mt-0.5 truncate">Yasta: Bs. {{ number_format($totalQrYasta, 2) }} • Yape: Bs. {{ number_format($totalQrYape, 2) }}</span>
                 </div>
                 <div class="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-300 shrink-0 ml-3">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="w-5 h-5 text-[#F5B81C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect width="6" height="6" x="3" y="3" rx="1"/>
                         <rect width="6" height="6" x="15" y="3" rx="1"/>
                         <rect width="6" height="6" x="3" y="15" rx="1"/>
@@ -211,8 +206,8 @@
                 </div>
             </div>
 
-            <!-- TARJETA 4: Dinero en Caja (Balance Neto) -->
-            <div class="theme-card p-4 rounded-2xl border theme-border flex items-center justify-between shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-4' : '' }}">
+            <!-- TARJETA 4: Dinero en Caja (Efectivo en Caja) -->
+            <div data-cy="kpi-efectivo-caja" class="theme-card p-4 rounded-2xl border theme-border flex items-center justify-between shadow-sm {{ session('animate_entrance') ? 'animate-entrance-card-4' : '' }}">
                 <div class="min-w-0">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block truncate">
                         Efectivo en Caja
@@ -225,7 +220,7 @@
                     </span>
                 </div>
                 <div class="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 ml-3 {{ $netCash >= 0 ? 'text-zinc-300' : 'text-rose-400' }}">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="w-5 h-5 {{ $netCash >= 0 ? 'text-[#F5B81C]' : 'text-rose-400' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect width="18" height="18" x="3" y="3" rx="3"/>
                         <circle cx="12" cy="12" r="3"/>
                         <path stroke-linecap="round" stroke-linejoin="round" d="m14.5 9.5-5 5"/>

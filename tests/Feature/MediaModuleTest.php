@@ -28,20 +28,7 @@ class MediaModuleTest extends TestCase
      */
     private function createFakePng(string $filename = 'test.png'): UploadedFile
     {
-        // PNG 1x1 transparente válido
-        $pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-        $content = base64_decode($pngBase64);
-
-        $tempPath = tempnam(sys_get_temp_dir(), 'test_img_');
-        file_put_contents($tempPath, $content);
-
-        return new UploadedFile(
-            $tempPath,
-            $filename,
-            'image/png',
-            null,
-            true
-        );
+        return UploadedFile::fake()->create($filename, 10, 'image/png');
     }
 
     public function test_guest_is_redirected_from_media(): void

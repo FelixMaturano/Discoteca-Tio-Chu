@@ -91,6 +91,10 @@ class DashboardController extends Controller
 
         $session = NightSession::findOrFail($validated['night_session_id']);
         if (! $session->isOpen()) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'No se puede actualizar el efectivo de una noche cerrada.'], 403);
+            }
+
             return back()->with('error', 'No se puede actualizar el efectivo de una noche cerrada.');
         }
 
@@ -98,6 +102,14 @@ class DashboardController extends Controller
         $closing->update([
             'reported_cash' => $validated['reported_cash'],
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Efectivo en mano actualizado.',
+                'reported_cash' => (float) $closing->reported_cash,
+            ]);
+        }
 
         return back()->with('success', 'Efectivo en mano actualizado.');
     }

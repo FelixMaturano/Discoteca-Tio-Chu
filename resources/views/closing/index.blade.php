@@ -84,7 +84,7 @@
             </div>
 
             @if($session)
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800">
+                <div data-cy="{{ $session->isOpen() ? 'badge-night-open' : 'badge-night-closed' }}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800">
                     <span class="w-2 h-2 rounded-full {{ $session->isOpen() ? 'bg-emerald-500' : 'bg-zinc-600' }}"></span>
                     <span class="text-xs font-black uppercase tracking-wider {{ $session->isOpen() ? 'text-zinc-200' : 'text-zinc-500' }}">
                         {{ $session->isOpen() ? 'Noche Abierta' : 'Noche Cerrada' }}
@@ -142,7 +142,7 @@
                 @if($session->isOpen())
                     <form method="POST" action="{{ route('closing.close', $session) }}" onsubmit="return confirm('¿Seguro que deseas dar por cerrada esta noche de atención?');">
                         @csrf
-                        <button type="submit" 
+                        <button type="submit" data-cy="btn-close-night"
                                 class="px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500 hover:text-white font-bold text-xs sm:text-sm transition-all cursor-pointer active:scale-95 flex items-center gap-2 shadow-sm">
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
@@ -153,7 +153,7 @@
                     </form>
                 @else
                     <div class="flex items-center gap-2">
-                        <div class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs sm:text-sm text-zinc-400 font-semibold">
+                        <div data-cy="badge-night-closed-indicator" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs sm:text-sm text-zinc-400 font-semibold">
                             <svg class="w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -162,7 +162,7 @@
                         </div>
                         <form method="POST" action="{{ route('closing.reopen', $session) }}" onsubmit="return confirm('¿Deseas reabrir esta noche para editar inventario o ventas?');">
                             @csrf
-                            <button type="submit" 
+                            <button type="submit" data-cy="btn-reopen-night"
                                     class="px-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-[#F5B81C] text-zinc-300 hover:text-white font-bold text-xs sm:text-sm transition-all cursor-pointer active:scale-95 shadow-sm">
                                 Reabrir Noche
                             </button>
@@ -215,6 +215,13 @@
             $paidStaffCount = $attendances->where('is_paid', true)->count();
             $totalStaffCount = $attendances->count();
             $pendingAmount = max(0, $attendances->sum('pay_amount') - ($closing->total_staff_paid ?? 0));
+
+            // H8: Arqueo de Efectivo Físico (Comprobación en mano / caja fuerte)
+            $pureCashIn = ($closing->total_cash_invoices ?? 0) + ($session->opening_cash ?? 0);
+            $pureCashOut = ($closing->total_staff_paid ?? 0) + ($closing->total_expenses ?? 0);
+            $expectedCashInHand = $pureCashIn - $pureCashOut;
+            $reportedCash = $closing && isset($closing->reported_cash) ? (float) $closing->reported_cash : 0;
+            $cashDifference = $reportedCash - $expectedCashInHand;
         @endphp
 
         <!-- ========================================================
@@ -224,31 +231,31 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             
             <!-- ==========================================
-                 COLUMNA IZQUIERDA: ARQUEO DE CAJA (7/12)
+                 COLUMNA IZQUIERDA: BALANCE EXPRESS Y ARQUEO FÍSICO (7/12)
                  ========================================== -->
-            <div class="theme-card lg:col-span-7 rounded-2xl border theme-border p-5 sm:p-6 shadow-sm space-y-4">
+            <div data-cy="balance-express-panel" class="theme-card lg:col-span-7 rounded-2xl border theme-border p-5 sm:p-6 shadow-sm space-y-4">
                 
-                <!-- Encabezado del Arqueo: Plata en Caja (Prominente y con Dorado) -->
+                <!-- Encabezado del Arqueo: Plata en Caja (H7: Balance Express) -->
                 <div class="p-5 rounded-2xl bg-zinc-950 border border-[#F5B81C]/25 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
                     <div>
                         <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-[#F5B81C] flex items-center gap-1.5">
                             <span class="w-2 h-2 rounded-full bg-[#F5B81C]"></span>
-                            Plata que debe quedar en caja
+                            Balance Express • Plata que debe quedar en caja
                         </span>
-                        <div class="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight mt-1 {{ $netClosing >= 0 ? 'text-white' : 'text-rose-400' }}">
+                        <div data-cy="balance-neto-caja" class="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight mt-1 {{ $netClosing >= 0 ? 'text-white' : 'text-rose-400' }}">
                             <span class="text-2xl sm:text-3xl font-sans font-black mr-1 {{ $netClosing >= 0 ? 'text-[#F5B81C]' : 'text-rose-400' }}">Bs.</span>{{ number_format($netClosing, 2) }}
                         </div>
                     </div>
                     
                     <div class="sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800/80">
                         <span class="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-                            Balance del Turno
+                            Balance del Turno (Ingresos - Egresos)
                         </span>
                         <div class="flex items-center sm:justify-end gap-2.5 mt-1.5">
-                            <span class="text-sm sm:text-base font-mono font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                            <span data-cy="balance-total-ingresos" class="text-sm sm:text-base font-mono font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
                                 +Bs. {{ number_format($totalIngresado, 2) }}
                             </span>
-                            <span class="text-sm sm:text-base font-mono font-black text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20">
+                            <span data-cy="balance-total-egresos" class="text-sm sm:text-base font-mono font-black text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20">
                                 -Bs. {{ number_format($totalEgresos, 2) }}
                             </span>
                         </div>
@@ -376,6 +383,88 @@
                         </div>
                     </div>
 
+                </div>
+
+                <!-- ========================================================
+                     ARQUEO DE EFECTIVO FÍSICO (H8) - COMPROBACIÓN EN MANO
+                     ======================================================== -->
+                <div data-cy="card-arqueo-fisico" class="p-5 rounded-2xl bg-zinc-950 border border-zinc-800/90 shadow-sm space-y-3.5 mt-2">
+                    <div class="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#F5B81C]"></span>
+                            <span class="text-sm font-black text-white uppercase tracking-wider">Arqueo de Efectivo Físico</span>
+                        </div>
+                        <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Comprobación en Mano</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Efectivo Físico Esperado -->
+                        <div class="p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+                            <span class="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Efectivo Teórico Esperado</span>
+                            <div class="text-lg font-black font-mono text-white mt-1" data-cy="expected-physical-cash">
+                                <span class="text-xs font-sans text-[#F5B81C] mr-0.5">Bs.</span>{{ number_format($expectedCashInHand, 2) }}
+                            </div>
+                            <span class="text-[10px] text-zinc-500 font-medium block mt-0.5">Recaudado + Apertura - Egresos</span>
+                        </div>
+
+                        <!-- Efectivo Físico Reportado (Contado) -->
+                        <div class="p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+                            <span class="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Efectivo Contado (Reportado)</span>
+                            <div class="text-lg font-black font-mono text-white mt-1" data-cy="reported-physical-cash">
+                                <span class="text-xs font-sans text-emerald-400 mr-0.5">Bs.</span>{{ number_format($reportedCash, 2) }}
+                            </div>
+                            <span class="text-[10px] text-zinc-500 font-medium block mt-0.5">Monto físico en mano</span>
+                        </div>
+
+                        <!-- Estado del Arqueo / Diferencia -->
+                        <div class="p-3 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col justify-between">
+                            <span class="text-[10px] font-bold uppercase text-zinc-400 block tracking-wider">Resultado del Arqueo</span>
+                            <div class="mt-1" data-cy="arqueo-difference-container">
+                                @if($cashDifference > 0)
+                                    <span data-cy="badge-plata-a-favor" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-black font-mono">
+                                        <span>+Bs.</span>{{ number_format($cashDifference, 2) }} <span class="text-[10px] font-sans font-bold uppercase">(A Favor)</span>
+                                    </span>
+                                @elseif($cashDifference < 0)
+                                    <span data-cy="badge-faltante" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-black font-mono">
+                                        <span>-Bs.</span>{{ number_format(abs($cashDifference), 2) }} <span class="text-[10px] font-sans font-bold uppercase">(Faltante)</span>
+                                    </span>
+                                @else
+                                    <span data-cy="badge-caja-cuadrada" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F5B81C]/15 border border-[#F5B81C]/30 text-[#F5B81C] text-xs font-black font-mono">
+                                        <span>Bs. 0.00</span> <span class="text-[10px] font-sans font-bold uppercase">(Cuadrada)</span>
+                                    </span>
+                                @endif
+                            </div>
+                            <span class="text-[10px] text-zinc-500 font-medium block mt-0.5">Diferencia neta en mano</span>
+                        </div>
+                    </div>
+
+                    <!-- Formulario para Guardar / Actualizar Efectivo Reportado -->
+                    @if($session->isOpen())
+                        <form method="POST" action="{{ route('cash.reported.update') }}" class="flex items-center gap-2 pt-1" data-cy="form-reported-cash">
+                            @csrf
+                            <input type="hidden" name="night_session_id" value="{{ $session->id }}">
+                            <div class="relative flex-1">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#F5B81C]">Bs.</span>
+                                <input type="number" step="0.01" min="0" name="reported_cash" id="reported_cash_input"
+                                       data-cy="input-reported-cash"
+                                       value="{{ number_format($reportedCash, 2, '.', '') }}" required
+                                       placeholder="Ingresar dinero contado en mano..."
+                                       class="w-full text-xs sm:text-sm font-mono font-bold bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-[#F5B81C]">
+                            </div>
+                            <button type="submit" data-cy="btn-save-reported-cash"
+                                    class="px-4 py-2 rounded-xl bg-[#F5B81C] hover:bg-[#e5ac18] text-black font-black text-xs sm:text-sm transition-all active:scale-95 shadow-sm shrink-0 cursor-pointer">
+                                Guardar Arqueo Físico
+                            </button>
+                        </form>
+                    @else
+                        <div data-cy="badge-arqueo-locked" class="px-3.5 py-2 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-400 font-semibold flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                Noche Cerrada — Arqueo físico bloqueado contra ediciones accidentales (H18)
+                            </span>
+                            <span class="text-zinc-500 font-mono text-[11px]">Efectivo registrado: Bs. {{ number_format($reportedCash, 2) }}</span>
+                        </div>
+                    @endif
                 </div>
 
             </div>

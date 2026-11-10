@@ -201,7 +201,7 @@ class MediaController extends Controller
             }
 
             $extension = pathinfo($sourcePath, PATHINFO_EXTENSION);
-            $filename = 'user_'.$user->id.'_'.time().'.'.$extension;
+            $filename = 'user_'.$user->id.'_'.time().'_'.uniqid().'.'.$extension;
             $destination = $avatarDir.DIRECTORY_SEPARATOR.$filename;
 
             File::copy($sourcePath, $destination);
@@ -262,7 +262,7 @@ class MediaController extends Controller
         }
 
         $extension = $file->getClientOriginalExtension();
-        $filename = 'user_'.$user->id.'_'.time().'.'.$extension;
+        $filename = 'user_'.$user->id.'_'.time().'_'.uniqid().'.'.$extension;
         $file->move($avatarDir, $filename);
 
         $relPath = 'images/avatars/'.$filename;

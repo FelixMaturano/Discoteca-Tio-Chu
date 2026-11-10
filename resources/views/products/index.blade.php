@@ -57,6 +57,7 @@
             <div class="inline-flex items-center p-1 rounded-xl bg-zinc-900 border border-zinc-800">
                 <button type="button" 
                         id="view-mode-cards-btn"
+                        data-cy="btn-view-cards"
                         onclick="switchViewMode('cards')"
                         title="Ver en Tarjetas"
                         class="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer bg-[#F5B81C] text-black shadow-sm">
@@ -70,6 +71,7 @@
                 </button>
                 <button type="button" 
                         id="view-mode-table-btn"
+                        data-cy="btn-view-table"
                         onclick="switchViewMode('table')"
                         title="Ver en Tabla"
                         class="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer text-zinc-400 hover:text-white">
@@ -239,7 +241,7 @@
     <!-- ========================================================
          4. VISTA 1: TABLA EJECUTIVA (OPCIONAL)
          ======================================================== -->
-    <div id="view-table-container" class="hidden rounded-2xl theme-card border theme-border overflow-hidden shadow-sm">
+    <div id="view-table-container" data-cy="view-table-container" class="hidden rounded-2xl theme-card border theme-border overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
@@ -393,7 +395,7 @@
     <!-- ========================================================
          5. VISTA 2: CUADRÍCULA DE TARJETAS (POR DEFECTO)
          ======================================================== -->
-    <div id="view-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+    <div id="view-cards-container" data-cy="view-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
         @foreach($products as $prod)
         @php
             $sub = getDrinkCategory($prod->name, $prod->category);
@@ -473,6 +475,7 @@
                                min="0"
                                id="stock-input-cards-{{ $prod->id }}"
                                value="{{ $stock }}"
+                               data-cy="stock-input-cards"
                                data-product-id="{{ $prod->id }}"
                                data-sale-price="{{ $prod->sale_price }}"
                                data-last-saved="{{ $stock }}"
@@ -491,6 +494,7 @@
                                    min="0" 
                                    value="{{ $stockPackages }}"
                                    id="stock-packages-cards-{{ $prod->id }}"
+                                   data-cy="stock-packages-cards"
                                    data-product-id="{{ $prod->id }}"
                                    onchange="onStockPartChange({{ $prod->id }}, 'cards')"
                                    class="w-7 text-center font-mono font-bold text-xs bg-transparent border-0 text-white focus:outline-none p-0">
@@ -501,6 +505,7 @@
                                    min="0" 
                                    value="{{ $stockUnits }}"
                                    id="stock-units-cards-{{ $prod->id }}"
+                                   data-cy="stock-units-cards"
                                    data-product-id="{{ $prod->id }}"
                                    onchange="onStockPartChange({{ $prod->id }}, 'cards')"
                                    class="w-7 text-center font-mono font-bold text-xs bg-transparent border-0 text-white focus:outline-none p-0">
@@ -513,24 +518,28 @@
                     <div class="inline-flex items-center gap-1 shrink-0">
                         <button type="button" 
                                 onclick="stepStock({{ $prod->id }}, -10)"
+                                data-cy="step-stock-minus-10"
                                 title="-10 unidades"
                                 class="px-1.5 py-1 rounded-lg text-[9px] font-mono font-black bg-zinc-900/90 text-zinc-400 hover:text-rose-400 border border-zinc-800 transition-all active:scale-95 cursor-pointer">
                             -10
                         </button>
                         <button type="button" 
                                 onclick="stepStock({{ $prod->id }}, -1)"
+                                data-cy="step-stock-minus-1"
                                 title="-1 unidad"
                                 class="px-1.5 py-1 rounded-lg text-[9px] font-mono font-black bg-zinc-900/90 text-zinc-300 hover:text-rose-400 border border-zinc-800 transition-all active:scale-95 cursor-pointer">
                             -1
                         </button>
                         <button type="button" 
                                 onclick="stepStock({{ $prod->id }}, 1)"
+                                data-cy="step-stock-plus-1"
                                 title="+1 unidad"
                                 class="px-1.5 py-1 rounded-lg text-[9px] font-mono font-black bg-zinc-900/90 text-zinc-300 hover:text-emerald-400 border border-zinc-800 transition-all active:scale-95 cursor-pointer">
                             +1
                         </button>
                         <button type="button" 
                                 onclick="stepStock({{ $prod->id }}, 10)"
+                                data-cy="step-stock-plus-10"
                                 title="+10 unidades"
                                 class="px-1.5 py-1 rounded-lg text-[9px] font-mono font-black bg-zinc-900/90 text-zinc-300 hover:text-emerald-400 border border-zinc-800 transition-all active:scale-95 cursor-pointer">
                             +10
