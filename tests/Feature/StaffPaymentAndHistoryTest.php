@@ -100,6 +100,100 @@ class StaffPaymentAndHistoryTest extends TestCase
         $this->assertTrue((bool) $att->is_paid);
     }
 
+    public function test_payroll_update_recalculates_paid_totals_and_closing(): void
+    {
+        $session = NightSession::create([
+            'session_date' => '2026-11-25',
+            'day_name' => 'Miércoles',
+            'pos_commission_rate' => 0.05,
+            'status' => 'open',
+        ]);
+        $paidStaff = Staff::create([
+            'name' => 'Personal Pagado',
+            'role' => 'MESERO',
+            'default_pay' => 80,
+        ]);
+        $unpaidStaff = Staff::create([
+            'name' => 'Personal Pendiente',
+            'role' => 'MESERO',
+            'default_pay' => 120,
+        ]);
+        $paidAttendance = StaffAttendance::create([
+            'night_session_id' => $session->id,
+            'staff_id' => $paidStaff->id,
+            'pay_amount' => 80,
+            'is_paid' => false,
+        ]);
+        $unpaidAttendance = StaffAttendance::create([
+            'night_session_id' => $session->id,
+            'staff_id' => $unpaidStaff->id,
+            'pay_amount' => 120,
+            'is_paid' => false,
+        ]);
+
+        $response = $this->actingAs($this->user)->putJson(route('staffPayments.update'), [
+            'night_session_id' => $session->id,
+            'attendances' => [
+                $paidAttendance->id => ['pay_amount' => 80, 'is_paid' => true],
+                $unpaidAttendance->id => ['pay_amount' => 120, 'is_paid' => false],
+            ],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('totalPlanilla', 200)
+            ->assertJsonPath('totalPagado', 80);
+        $this->assertDatabaseHas('staff_attendances', [
+            'id' => $paidAttendance->id,
+            'is_paid' => true,
+        ]);
+        $this->assertDatabaseHas('cash_closings', [
+            'night_session_id' => $session->id,
+            'total_staff_paid' => 80,
+            'net_cash_closing' => -80,
+        ]);
+    }
+
+    public function test_ajax_payment_settles_debt_from_a_previous_closed_night(): void
+    {
+        $session = NightSession::create([
+            'session_date' => '2026-11-24',
+            'day_name' => 'Martes',
+            'pos_commission_rate' => 0.05,
+            'status' => 'closed',
+        ]);
+        $staff = Staff::create([
+            'name' => 'Deuda Histórica',
+            'role' => 'MESERO',
+            'default_pay' => 150,
+        ]);
+        $attendance = StaffAttendance::create([
+            'night_session_id' => $session->id,
+            'staff_id' => $staff->id,
+            'pay_amount' => 150,
+            'is_paid' => false,
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson(
+            route('paymentHistory.paySingle', $attendance)
+        );
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('amount', 150)
+            ->assertJsonPath('totalDeuda', 0)
+            ->assertJsonPath('totalPagado', 150);
+        $this->assertDatabaseHas('staff_attendances', [
+            'id' => $attendance->id,
+            'is_paid' => true,
+        ]);
+        $this->assertDatabaseHas('cash_closings', [
+            'night_session_id' => $session->id,
+            'total_staff_paid' => 150,
+        ]);
+        $this->assertSame('closed', $session->fresh()->status);
+    }
+
     public function test_closing_displays_bartender_settlement_by_bar(): void
     {
         $session = NightSession::first();
