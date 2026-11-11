@@ -64,8 +64,8 @@ describe('Sprint 2 - Historias H13, H14, H6 y H4', () => {
 
                 cy.wait('@createQrCharge').then(({ request, response }) => {
                     expect(response.statusCode).to.eq(302);
-                    expect(JSON.stringify(request.body)).to.include('E2E-H14-YAPE-20261023');
-                    expect(JSON.stringify(request.body)).to.include('YAPE');
+                    expect(request.body).to.include('bank_app=YAPE');
+                    expect(request.body).to.include('amount=82.50');
                 });
                 cy.get('tr[id^="qr-row-"]')
                     .should('contain.text', 'Yape')
