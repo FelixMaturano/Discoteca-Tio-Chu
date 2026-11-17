@@ -24,7 +24,10 @@ jobs:
       - name: Análisis estático (PHPStan)
         run: ./vendor/bin/phpstan analyse --memory-limit=1G
       - name: Auditoría de dependencias
-        run: composer audit --locked
+        run: |
+          audit_succeeded=0
+          for i in 1 2 3; do composer audit --locked && { audit_succeeded=1; break; } || { echo "Reintentando composer audit ($i/3)..."; sleep 5; }; done
+          if [ "$audit_succeeded" -ne 1 ]; then exit 1; fi
 
   phpunit-tests:
     name: Pruebas Unitarias e Integración (PHPUnit)
