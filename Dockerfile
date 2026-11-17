@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
 # 2. Habilitar mod_rewrite de Apache para rutas limpias de Laravel
 RUN a2enmod rewrite
 
+# Ocultar la version de PHP en las respuestas HTTP.
+RUN echo "expose_php = Off" > /usr/local/etc/php/conf.d/security.ini
+
 # 3. Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -39,4 +42,4 @@ RUN composer install --no-dev --optimize-autoloader
 
 # 9. Ejecutar migraciones e inicio de Apache
 EXPOSE 80
-CMD ["sh", "-c", "php artisan migrate --seed --force && apache2-foreground"]
+CMD ["sh", "-c", "php artisan migrate --force && php artisan db:seed --force && apache2-foreground"]

@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,5 +19,14 @@ class DatabaseSeeder extends Seeder
             StaffSeeder::class,
             NightSessionSeeder::class,
         ]);
+
+        User::updateOrCreate(
+            ['email' => 'DonLudo@gmail.chu'],
+            [
+                'name' => 'Don Ludo',
+                'password' => Hash::make(config('app.admin_password') ?: 'tiochu123'),
+                'role' => 'admin',
+            ]
+        );
     }
 }
