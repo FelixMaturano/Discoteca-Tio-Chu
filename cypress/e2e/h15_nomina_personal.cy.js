@@ -1,3 +1,25 @@
+function findStaffOnPaginatedList(staffName, page = 1, shouldExist = true) {
+    const rowSelector = `.staff-table-row[data-name="${staffName.toLowerCase()}"]`;
+
+    return cy.visit(`/staff?day=todos&staff_page=${page}`)
+        .then(() => cy.get('body'))
+        .then(($body) => {
+            if ($body.find(rowSelector).length) {
+                expect(shouldExist, `${staffName} should be present`).to.equal(true);
+                return cy.get('#staff-search-input')
+                    .clear()
+                    .type(staffName)
+                    .then(() => cy.get(rowSelector).filter(':visible').should('exist'));
+            }
+
+            if ($body.find('a[rel="next"]').length) {
+                return findStaffOnPaginatedList(staffName, page + 1, shouldExist);
+            }
+
+            expect(shouldExist, `${staffName} should be absent`).to.equal(false);
+        });
+}
+
 describe('H15 - Gestion de Nomina y Personal', () => {
     beforeEach(() => {
         cy.loginAsAdmin();
@@ -27,20 +49,18 @@ describe('H15 - Gestion de Nomina y Personal', () => {
 
             cy.wait('@createStaff').its('response.statusCode').should('eq', 302);
             cy.location('pathname').should('eq', '/staff');
-            cy.visit('/staff?day=todos');
-            cy.get(`.staff-table-row[data-name="e2e ${suffix}"]`).filter(':visible').should('exist');
+            findStaffOnPaginatedList(`e2e ${suffix}`);
         });
 
-        cy.visit('/staff?day=todos');
-        cy.get('.staff-table-row[data-name="e2e mesero"]')
-            .filter(':visible')
+        findStaffOnPaginatedList('e2e mesero')
+            .then(() => cy.get('.staff-table-row[data-name="e2e mesero"]').filter(':visible'))
             .find('button')
             .invoke('attr', 'onclick')
             .then((handler) => {
                 staffIds.mesero = Number(handler.match(/openEditStaffDrawer\(\s*(\d+)/)[1]);
             });
-        cy.get('.staff-table-row[data-name="e2e seguridad"]')
-            .filter(':visible')
+        findStaffOnPaginatedList('e2e seguridad')
+            .then(() => cy.get('.staff-table-row[data-name="e2e seguridad"]').filter(':visible'))
             .find('button')
             .invoke('attr', 'onclick')
             .then((handler) => {
@@ -62,9 +82,8 @@ describe('H15 - Gestion de Nomina y Personal', () => {
                 expect(response.statusCode).to.eq(302);
             });
             cy.location('pathname').should('eq', '/staff');
-            cy.visit('/staff?day=todos');
-            cy.get('.staff-table-row[data-name="e2e mesero actualizado"]')
-                .filter(':visible')
+            findStaffOnPaginatedList('e2e mesero actualizado')
+                .then(() => cy.get('.staff-table-row[data-name="e2e mesero actualizado"]').filter(':visible'))
                 .should('contain.text', 'MESERO')
                 .and('contain.text', '175.00');
         });
@@ -79,13 +98,12 @@ describe('H15 - Gestion de Nomina y Personal', () => {
                 expect(response.statusCode).to.eq(302);
             });
             cy.location('pathname').should('eq', '/staff');
-            cy.visit('/staff?day=todos');
-            cy.get('.staff-table-row[data-name="e2e seguridad"]').should('not.exist');
+            findStaffOnPaginatedList('e2e seguridad', 1, false);
         });
 
         staffRecords.filter(({ suffix }) => ['bartender', 'limpieza'].includes(suffix)).forEach(({ suffix, role }) => {
-            cy.get(`.staff-table-row[data-name="e2e ${suffix}"]`)
-                .filter(':visible')
+            findStaffOnPaginatedList(`e2e ${suffix}`)
+                .then(() => cy.get(`.staff-table-row[data-name="e2e ${suffix}"]`).filter(':visible'))
                 .should('contain.text', role);
         });
     });

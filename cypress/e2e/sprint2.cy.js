@@ -74,7 +74,8 @@ describe('Sprint 2 - Historias H13, H14, H6 y H4', () => {
                     .should('be.visible');
 
                 cy.intercept('POST', '/sales/bulk-update').as('saveBarSales');
-                cy.visit(`/sales?session_id=${sessionId}&bar=${encodeURIComponent('Barra Principal')}`);
+                const salesUrl = `/sales?session_id=${sessionId}&bar=${encodeURIComponent('Barra Principal')}&liquors_page=2&mixer_page=1`;
+                cy.visit(salesUrl);
 
                 cy.get('#sales-form tr.liquor-row[data-product-id="20"]').within(() => {
                     cy.get('.input-units').clear().type('7').blur();
@@ -96,7 +97,7 @@ describe('Sprint 2 - Historias H13, H14, H6 y H4', () => {
                 cy.wait('@saveBarSales').its('response.statusCode').should('eq', 200);
                 cy.get('#sales-autosave-status').should('have.text', 'Guardado');
 
-                cy.visit(`/sales?session_id=${sessionId}&bar=${encodeURIComponent('Barra Principal')}`);
+                cy.visit(salesUrl);
                 cy.get('#sales-form tr.liquor-row[data-product-id="20"] .cell-vendido')
                     .should('have.text', '5');
                 cy.get('#sales-form tr.mixer-row[data-product-id="26"] .cell-included')

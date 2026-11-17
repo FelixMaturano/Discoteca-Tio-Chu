@@ -4,13 +4,25 @@ function openNight(date) {
     cy.get('#pos_commission_rate').clear().type('0.013');
     cy.intercept('POST', '/sessions').as(`openNight${date.replaceAll('-', '')}`);
     cy.contains('button', 'Aperturar Noche').click();
-    cy.wait(`@openNight${date.replaceAll('-', '')}`).its('response.statusCode').should('eq', 302);
+    cy.wait(`@openNight${date.replaceAll('-', '')}`).then(({ response }) => {
+        expect(response.statusCode).to.eq(302);
+        expect(new URL(response.headers.location, Cypress.config('baseUrl')).pathname).to.eq('/sessions');
+    });
 
     return cy.visit('/sessions')
         .get(`tr[data-session-row] input[data-date^="${date}"]`)
         .should('have.length', 1)
         .closest('tr[data-session-row]')
         .invoke('attr', 'data-session-row');
+}
+
+function visitInventoryPageWithGaneshaGin(sessionId) {
+    cy.visit(`/bar-inventory?session_id=${sessionId}&bar=${encodeURIComponent('Barra Principal')}&page=2`);
+    cy.get('input[placeholder="Buscar bebida..."]').clear().type('ganesha gin');
+}
+
+function visitSalesPageWithGaneshaGin(sessionId) {
+    cy.visit(`/sales?session_id=${sessionId}&bar=${encodeURIComponent('Barra Principal')}&liquors_page=2&mixer_page=1`);
 }
 
 function closeNight(sessionId) {
@@ -50,7 +62,7 @@ describe('Sprint 3 - Historias H3, H5, H16 y H17', () => {
     it('H3 sincroniza el stock inicial desde el saldo de la noche anterior', () => {
         openNight('2026-10-20').then((previousSessionId) => {
             cy.intercept('POST', '**/bar-inventory/bulk-update').as('savePreviousInventory');
-            cy.visit(`/bar-inventory?session_id=${previousSessionId}&bar=${encodeURIComponent('Barra Principal')}`);
+            visitInventoryPageWithGaneshaGin(previousSessionId);
             cy.get('.inv-row[data-name="ganesha gin"] .input-init-units')
                 .clear()
                 .type('14')
@@ -58,7 +70,7 @@ describe('Sprint 3 - Historias H3, H5, H16 y H17', () => {
             cy.wait('@savePreviousInventory').its('response.statusCode').should('be.oneOf', [200, 302]);
 
             cy.intercept('POST', '**/sales/bulk-update').as('savePreviousClosing');
-            cy.visit(`/sales?session_id=${previousSessionId}&bar=${encodeURIComponent('Barra Principal')}`);
+            visitSalesPageWithGaneshaGin(previousSessionId);
             cy.get('#sales-form tr.liquor-row[data-product-id="20"] .input-saldo')
                 .clear()
                 .type('14')
@@ -69,7 +81,7 @@ describe('Sprint 3 - Historias H3, H5, H16 y H17', () => {
         });
 
         openNight('2026-10-21').then((currentSessionId) => {
-            cy.visit(`/bar-inventory?session_id=${currentSessionId}&bar=${encodeURIComponent('Barra Principal')}`);
+            visitInventoryPageWithGaneshaGin(currentSessionId);
             cy.contains('button', 'Traer Sobrante de Ayer').click();
             cy.contains('Saldos de la noche anterior sincronizados correctamente')
                 .should('be.visible');
@@ -87,7 +99,7 @@ describe('Sprint 3 - Historias H3, H5, H16 y H17', () => {
     it('H5 muestra la liquidación por bartender con ventas, QR, tarjeta y efectivo neto', () => {
         openNight('2026-10-30').then((sessionId) => {
             cy.intercept('POST', '**/sales/bulk-update').as('saveH5Sales');
-            cy.visit(`/sales?session_id=${sessionId}&bar=${encodeURIComponent('Barra Principal')}`);
+            visitSalesPageWithGaneshaGin(sessionId);
             cy.get('#sales-form tr.liquor-row[data-product-id="20"]').within(() => {
                 cy.get('.input-units').clear().type('1');
                 cy.get('.input-saldo').clear().type('0').blur();
