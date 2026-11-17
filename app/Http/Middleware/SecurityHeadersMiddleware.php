@@ -17,6 +17,17 @@ class SecurityHeadersMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
+        $isLocal = app()->environment('local');
+        $localViteSources = $isLocal
+            ? ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://[::1]:5173']
+            : [];
+        $localViteConnectSources = array_merge(
+            $localViteSources,
+            ['ws://localhost:5173', 'ws://127.0.0.1:5173', 'ws://[::1]:5173']
+        );
+        $connectSources = $isLocal
+            ? array_merge(["'self'"], $localViteConnectSources)
+            : ["'self'"];
 
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
@@ -31,11 +42,17 @@ class SecurityHeadersMiddleware
                 "form-action 'self'",
                 "frame-ancestors 'self'",
                 "object-src 'none'",
-                "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-                "font-src 'self' data: https://fonts.gstatic.com",
+                'script-src '.implode(' ', array_merge(
+                    ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com'],
+                    $localViteSources
+                )),
+                'style-src '.implode(' ', array_merge(
+                    ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://fonts.bunny.net'],
+                    $localViteSources
+                )),
+                "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net",
                 "img-src 'self' data: blob: https:",
-                "connect-src 'self' http://127.0.0.1:4040 http://localhost:4040 ws://localhost:5173 ws://127.0.0.1:5173",
+                'connect-src '.implode(' ', $connectSources),
             ])
         );
 

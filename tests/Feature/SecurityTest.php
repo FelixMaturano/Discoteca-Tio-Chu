@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class SecurityTest extends TestCase
@@ -72,8 +74,63 @@ class SecurityTest extends TestCase
         $response->assertHeader('X-XSS-Protection', '1; mode=block');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->assertHeader('Content-Security-Policy');
-        $this->assertStringContainsString("'unsafe-inline'", $response->headers->get('Content-Security-Policy'));
+        $contentSecurityPolicy = $response->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("default-src 'self'", $contentSecurityPolicy);
+        $this->assertStringContainsString(
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            $contentSecurityPolicy
+        );
+        $this->assertStringContainsString(
+            'style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com https://fonts.bunny.net',
+            $contentSecurityPolicy
+        );
+        $this->assertStringContainsString(
+            'font-src \'self\' data: https://fonts.gstatic.com https://fonts.bunny.net',
+            $contentSecurityPolicy
+        );
+        $this->assertStringContainsString('img-src \'self\' data: blob: https:', $contentSecurityPolicy);
+        $this->assertStringContainsString("connect-src 'self'", $contentSecurityPolicy);
         $response->assertHeaderMissing('Strict-Transport-Security');
+    }
+
+    public function test_local_content_security_policy_allows_vite_assets_and_hmr(): void
+    {
+        $this->app->detectEnvironment(static fn () => 'local');
+
+        try {
+            $response = $this->get('/login');
+            $contentSecurityPolicy = $response->headers->get('Content-Security-Policy');
+
+            $this->assertStringContainsString(
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173",
+                $contentSecurityPolicy
+            );
+            $this->assertStringContainsString(
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173",
+                $contentSecurityPolicy
+            );
+            $this->assertStringContainsString(
+                "connect-src 'self' http://localhost:5173 http://127.0.0.1:5173 http://[::1]:5173 ws://localhost:5173 ws://127.0.0.1:5173 ws://[::1]:5173",
+                $contentSecurityPolicy
+            );
+        } finally {
+            $this->app->detectEnvironment(static fn () => 'testing');
+        }
+    }
+
+    public function test_production_app_provider_forces_https_urls(): void
+    {
+        URL::forceScheme(null);
+        $this->app->detectEnvironment(static fn () => 'production');
+
+        try {
+            (new AppServiceProvider($this->app))->boot();
+
+            $this->assertStringStartsWith('https://', URL::to('/login'));
+        } finally {
+            $this->app->detectEnvironment(static fn () => 'testing');
+            URL::forceScheme(null);
+        }
     }
 
     public function test_hsts_is_only_sent_for_https_requests(): void
