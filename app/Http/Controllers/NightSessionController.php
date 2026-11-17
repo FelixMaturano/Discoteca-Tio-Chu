@@ -118,6 +118,10 @@ class NightSessionController extends Controller
 
     public function updateStatus(Request $request, NightSession $session)
     {
+        if (! $session->isOpen()) {
+            abort(403, 'No se puede modificar ni eliminar una sesión cerrada');
+        }
+
         $validated = $request->validate([
             'status' => 'required|in:open,closed',
             'pos_commission_rate' => 'nullable|numeric|min:0|max:1',
@@ -130,6 +134,10 @@ class NightSessionController extends Controller
 
     public function destroy(NightSession $session)
     {
+        if (! $session->isOpen()) {
+            abort(403, 'No se puede modificar ni eliminar una sesión cerrada');
+        }
+
         $dateFormatted = Carbon::parse($session->session_date)->format('d/m/Y');
         $session->delete();
 

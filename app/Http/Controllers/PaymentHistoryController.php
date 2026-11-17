@@ -6,6 +6,7 @@ use App\Models\NightSession;
 use App\Models\StaffAttendance;
 use App\Services\NightSessionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PaymentHistoryController extends Controller
 {
@@ -123,45 +124,51 @@ class PaymentHistoryController extends Controller
      */
     public function paySingle(Request $request, StaffAttendance $attendance)
     {
-        if ($attendance->is_paid) {
-            $message = 'El jornal ya estaba pagado.';
+        return DB::transaction(function () use ($request, $attendance) {
+            $session = NightSession::query()
+                ->lockForUpdate()
+                ->find($attendance->night_session_id);
+            $lockedAttendance = StaffAttendance::query()
+                ->lockForUpdate()
+                ->findOrFail($attendance->id);
+
+            if ($lockedAttendance->is_paid) {
+                $message = 'El jornal ya estaba pagado.';
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'alreadyPaid' => true,
+                        'message' => $message,
+                        'workerName' => $lockedAttendance->staff->name ?? 'Personal',
+                        'amount' => (float) $lockedAttendance->pay_amount,
+                    ]);
+                }
+
+                return back()->with('success', $message);
+            }
+
+            $lockedAttendance->update(['is_paid' => true]);
+
+            if ($session) {
+                $this->sessionService->recalculateClosing($session);
+            }
+
+            $workerName = $lockedAttendance->staff->name ?? 'Personal';
+
             if ($request->wantsJson() || $request->ajax()) {
+                $unpaid = $session ? (float) $session->staffAttendances()->where('is_paid', false)->sum('pay_amount') : 0;
+                $paid = $session ? (float) $session->staffAttendances()->where('is_paid', true)->sum('pay_amount') : 0;
+
                 return response()->json([
                     'success' => true,
-                    'alreadyPaid' => true,
-                    'message' => $message,
-                    'workerName' => $attendance->staff->name ?? 'Personal',
-                    'amount' => (float) $attendance->pay_amount,
+                    'workerName' => $workerName,
+                    'amount' => (float) $lockedAttendance->pay_amount,
+                    'totalDeuda' => $unpaid,
+                    'totalPagado' => $paid,
                 ]);
             }
 
-            return back()->with('success', $message);
-        }
-
-        $attendance->update([
-            'is_paid' => true,
-        ]);
-
-        if ($attendance->nightSession) {
-            $this->sessionService->recalculateClosing($attendance->nightSession);
-        }
-
-        $workerName = $attendance->staff->name ?? 'Personal';
-
-        if ($request->wantsJson() || $request->ajax()) {
-            $session = $attendance->nightSession;
-            $unpaid = $session ? (float) $session->staffAttendances()->where('is_paid', false)->sum('pay_amount') : 0;
-            $paid = $session ? (float) $session->staffAttendances()->where('is_paid', true)->sum('pay_amount') : 0;
-
-            return response()->json([
-                'success' => true,
-                'workerName' => $workerName,
-                'amount' => (float) $attendance->pay_amount,
-                'totalDeuda' => $unpaid,
-                'totalPagado' => $paid,
-            ]);
-        }
-
-        return back()->with('success', 'Se registró el pago de Bs. '.number_format($attendance->pay_amount, 2)." para {$workerName}. Deuda saldada.");
+            return back()->with('success', 'Se registró el pago de Bs. '.number_format((float) $lockedAttendance->pay_amount, 2)." para {$workerName}. Deuda saldada.");
+        }, 3);
     }
 }

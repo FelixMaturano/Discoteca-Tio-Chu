@@ -9,7 +9,7 @@ echo =====================================================================
 echo                DISCOTECA TÍO CHU - INSTALADOR INICIAL
 echo =====================================================================
 echo.
-echo [1/6] Verificando entorno PHP...
+echo [1/7] Verificando entorno PHP...
 set "PHP_BIN="
 where php >nul 2>nul
 if %ERRORLEVEL% equ 0 set "PHP_BIN=php"
@@ -32,15 +32,31 @@ if not defined PHP_BIN (
 )
 echo       - PHP listo: %PHP_BIN%
 
-echo [2/6] Configurando archivo de entorno (.env)...
+echo [2/7] Configurando archivo de entorno (.env)...
+set "ENV_CREATED=0"
 if not exist ".env" (
-    copy .env.example .env > nul
+    if not exist ".env.example" (
+        color 0C
+        echo [ERROR] No se encontro .env.example.
+        echo.
+        pause
+        exit /b 1
+    )
+    copy /y ".env.example" ".env" > nul
+    if errorlevel 1 (
+        color 0C
+        echo [ERROR] No se pudo crear .env desde .env.example.
+        echo.
+        pause
+        exit /b 1
+    )
+    set "ENV_CREATED=1"
     echo       - Archivo .env creado a partir de .env.example.
 ) else (
     echo       - Archivo .env ya existe.
 )
 
-echo [3/6] Verificando dependencias (Composer)...
+echo [3/7] Verificando dependencias (Composer)...
 if not exist "vendor" (
     if not exist "%~dp0composer.phar" (
         echo       - Composer no encontrado. Descargando Composer...
@@ -66,9 +82,13 @@ if not exist "vendor" (
     echo       - Carpeta vendor detectada correctamente.
 )
 
-echo [4/6] Generando clave de seguridad de la aplicación...
-call "%PHP_BIN%" artisan key:generate --force
-if %ERRORLEVEL% neq 0 exit /b 1
+echo [4/7] Generando clave de seguridad si se creó un entorno nuevo...
+if "%ENV_CREATED%"=="1" (
+    call "%PHP_BIN%" artisan key:generate
+    if errorlevel 1 exit /b 1
+) else (
+    echo       - Se conserva la clave del archivo .env existente.
+)
 
 echo [5/7] Preparando Base de Datos SQLite y Datos Oficiales...
 if not exist "database\database.sqlite" (

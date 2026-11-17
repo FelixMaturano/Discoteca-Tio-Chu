@@ -53,6 +53,7 @@
                         </select>
                     </div>
                 </form>
+
             @endif
 
             <!-- Estado de Noche Cerrada (Discreto y sin alarmas estridentes) -->
@@ -415,6 +416,8 @@
             </div>
 
         </form>
+
+        <div class="mt-4">{{ $inventorySales->links() }}</div>
 
         <!-- ========================================================
              5. SCRIPT REACTIVO CON MOTOR DE NAVEGACIÓN TIPO EXCEL

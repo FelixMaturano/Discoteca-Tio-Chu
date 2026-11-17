@@ -19,8 +19,8 @@ class ServerTunnelController extends Controller
             'isRunning' => $status['is_running'],
             'publicUrl' => $status['url'],
             'proto' => $status['proto'] ?? 'https',
-            'port' => env('NGROK_PORT', 8000),
-            'hasToken' => ! empty(env('NGROK_AUTHTOKEN')),
+            'port' => config('services.ngrok.port', 8000),
+            'hasToken' => ! empty(config('services.ngrok.authtoken')),
             'localIp' => $this->getLocalIpAddress(),
         ]);
     }
@@ -36,8 +36,8 @@ class ServerTunnelController extends Controller
             'is_running' => $status['is_running'],
             'public_url' => $status['url'],
             'proto' => $status['proto'] ?? 'https',
-            'port' => env('NGROK_PORT', 8000),
-            'has_token' => ! empty(env('NGROK_AUTHTOKEN')),
+            'port' => config('services.ngrok.port', 8000),
+            'has_token' => ! empty(config('services.ngrok.authtoken')),
             'local_ip' => $this->getLocalIpAddress(),
         ]);
     }
@@ -52,6 +52,7 @@ class ServerTunnelController extends Controller
         ]);
 
         $token = trim($request->input('token'));
+        config(['services.ngrok.authtoken' => $token]);
         $envPath = base_path('.env');
 
         if (file_exists($envPath)) {
@@ -104,7 +105,7 @@ class ServerTunnelController extends Controller
         }
 
         // 1. Asegurar authtoken configurado
-        $token = env('NGROK_AUTHTOKEN');
+        $token = config('services.ngrok.authtoken');
         if (empty($token)) {
             return response()->json([
                 'success' => false,
@@ -128,7 +129,7 @@ class ServerTunnelController extends Controller
         usleep(300000); // 300ms
 
         // 3. Iniciar proceso en segundo plano en Windows
-        $port = (int) env('NGROK_PORT', 8000);
+        $port = (int) config('services.ngrok.port', 8000);
         $logPath = storage_path('logs/ngrok.log');
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {

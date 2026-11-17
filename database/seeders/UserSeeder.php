@@ -19,6 +19,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Don Ludo',
                 'password' => Hash::make('tiochu123'),
+                'role' => 'admin',
             ]
         );
 
@@ -28,6 +29,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Don Ludo',
                 'password' => Hash::make('tiochu123'),
+                'role' => 'admin',
             ]
         );
     }

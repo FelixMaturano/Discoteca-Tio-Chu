@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashClosing;
 use App\Models\Expense;
 use App\Models\NightSession;
 use App\Models\Staff;
 use App\Models\StaffAttendance;
 use App\Services\NightSessionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CashClosingController extends Controller
 {
@@ -122,6 +124,7 @@ class CashClosingController extends Controller
 
     public function updateAttendance(Request $request)
     {
+        $session = null;
         if ($request->has('night_session_id')) {
             $session = NightSession::find($request->input('night_session_id'));
             if ($session && ! $session->isOpen()) {
@@ -141,7 +144,7 @@ class CashClosingController extends Controller
             }
         }
 
-        if (isset($session) && $session) {
+        if ($session) {
             $this->sessionService->recalculateClosing($session);
         }
 
@@ -202,16 +205,29 @@ class CashClosingController extends Controller
 
     public function closeNight(Request $request, NightSession $session)
     {
-        $session->update(['status' => 'closed']);
-        $closing = $this->sessionService->recalculateClosing($session);
-        $closing->update(['closed_at' => now()]);
+        DB::transaction(function () use ($session): void {
+            $lockedSession = NightSession::query()->lockForUpdate()->findOrFail($session->id);
+            $closing = CashClosing::where('night_session_id', $lockedSession->id)
+                ->lockForUpdate()
+                ->first();
+            if (! $closing) {
+                CashClosing::firstOrCreate(['night_session_id' => $lockedSession->id]);
+            }
+
+            $lockedSession->update(['status' => 'closed']);
+            $closing = $this->sessionService->recalculateClosing($lockedSession);
+            $closing->update(['closed_at' => now()]);
+        }, 3);
 
         return back()->with('success', 'La noche ha sido cerrada satisfactoriamente.');
     }
 
     public function reopenNight(Request $request, NightSession $session)
     {
-        $session->update(['status' => 'open']);
+        DB::transaction(function () use ($session): void {
+            $lockedSession = NightSession::query()->lockForUpdate()->findOrFail($session->id);
+            $lockedSession->update(['status' => 'open']);
+        }, 3);
 
         return back()->with('success', 'La noche ha sido reabierta.');
     }

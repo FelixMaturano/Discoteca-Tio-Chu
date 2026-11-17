@@ -22,6 +22,7 @@ class Expense extends Model
         'amount' => 'decimal:2',
     ];
 
+    /** @return BelongsTo<NightSession, $this> */
     public function nightSession(): BelongsTo
     {
         return $this->belongsTo(NightSession::class);

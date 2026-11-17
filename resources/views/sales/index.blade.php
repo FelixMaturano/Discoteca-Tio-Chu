@@ -400,7 +400,7 @@
                     <a href="{{ route('qrs.index', ['session_id' => $session->id]) }}" class="text-[10px] font-semibold text-blue-400 hover:underline">Ver QR &rarr;</a>
                 </div>
                 <div class="mt-2 text-xl sm:text-2xl font-black font-mono text-blue-400 tracking-tight">
-                    <span class="text-xs sm:text-sm mr-0.5 font-sans font-bold">Bs.</span>{{ number_format($selectedBar === 'Tienda' ? $storeSales->sum('qr_amount') : $barTotalQr, 2) }}
+                    <span class="text-xs sm:text-sm mr-0.5 font-sans font-bold">Bs.</span>{{ number_format($selectedBar === 'Tienda' ? $storeSalesQrTotal : $barTotalQr, 2) }}
                 </div>
                 <p class="text-[10px] sm:text-[11px] text-zinc-500 mt-1 font-mono truncate">
                     @if($selectedBar === 'Tienda')
@@ -418,7 +418,7 @@
                     <a href="{{ route('invoices.index', ['session_id' => $session->id]) }}" class="text-[10px] font-semibold text-purple-400 hover:underline">Ver POS &rarr;</a>
                 </div>
                 <div class="mt-2 text-xl sm:text-2xl font-black font-mono text-purple-400 tracking-tight">
-                    <span class="text-xs sm:text-sm mr-0.5 font-sans font-bold">Bs.</span>{{ number_format($selectedBar === 'Tienda' ? $storeSales->sum('card_amount') : $barTotalCard, 2) }}
+                    <span class="text-xs sm:text-sm mr-0.5 font-sans font-bold">Bs.</span>{{ number_format($selectedBar === 'Tienda' ? $storeSalesCardTotal : $barTotalCard, 2) }}
                 </div>
                 <p class="text-[10px] sm:text-[11px] text-zinc-500 mt-1 font-mono truncate">
                     @if($selectedBar === 'Tienda')
@@ -621,7 +621,7 @@
                                 </tr>
                             </thead>
                             <tbody class="block md:table-row-group divide-y-0 md:divide-y theme-border font-sans space-y-3 md:space-y-0" id="tienda-tbody">
-                                @forelse($allBarSales as $index => $sale)
+                                @forelse($allBarSalesPage as $index => $sale)
                                     @php
                                         $prod = $sale->product;
                                         if (!$prod) continue;
@@ -815,13 +815,14 @@
                                         {{ $totalTiendaUnits ?? $allBarSales->sum('vendido') }}
                                     </td>
                                     <td class="px-0 md:px-4 py-0 md:py-2.5 text-right font-mono font-black text-[#F5B81C] text-base md:text-sm" id="tfoot-tienda-subtotal">
-                                        Bs. {{ number_format($allBarSales->sum('subtotal'), 2) }}
+                                        Bs. {{ number_format($grandTotalBar - $totalStoreSales, 2) }}
                                     </td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
+                <div class="mt-4">{{ $allBarSalesPage->links() }}</div>
 
                 <!-- Guardarropa y Snacks (Para el Cierre de Caja) -->
                 <div class="p-4 sm:p-5 rounded-2xl theme-card border theme-border space-y-3">
@@ -956,7 +957,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y theme-border font-sans">
-                                @forelse($liquorSales as $index => $sale)
+                                @forelse($liquorSalesPage as $index => $sale)
                                     @php
                                         $mixerInfo = $mapping[$sale->product_id] ?? null;
                                         $mixerId = $mixerInfo['mixer_id'] ?? 0;
@@ -1122,6 +1123,7 @@
                         </table>
                     </div>
                 </div>
+                <div class="mt-4">{{ $liquorSalesPage->links() }}</div>
 
                 <!-- 2. TABLA DE MIXERS / SODAS (EXTRAS) -->
                 <div class="rounded-2xl theme-card border theme-border overflow-hidden">
@@ -1170,7 +1172,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y theme-border font-sans">
-                                @forelse($mixerSales as $index => $sale)
+                                @forelse($mixerSalesPage as $index => $sale)
                                     <tr class="hover:bg-zinc-900/40 transition-colors mixer-row" 
                                         data-row-id="{{ $sale->id }}" 
                                         data-units-per-pkg="{{ $sale->product->units_per_package ?? 1 }}"
@@ -1297,6 +1299,7 @@
                         </table>
                     </div>
                 </div>
+                <div class="mt-4">{{ $mixerSalesPage->links() }}</div>
 
                 <!-- ======================================================== -->
                 <!-- DETALLE DE COBROS DIGITALES (QR Y TARJETAS POS) -->
@@ -1351,6 +1354,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="px-4 pb-3">{{ $barQrPayments->links() }}</div>
                     </div>
 
                     <!-- 2. TABLA TARJETAS POS EN ESTA BARRA -->
@@ -1399,6 +1403,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="px-4 pb-3">{{ $barCardInvoices->links() }}</div>
                     </div>
 
                 </div>

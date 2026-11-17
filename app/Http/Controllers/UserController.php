@@ -29,6 +29,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
+            'role' => ['sometimes', 'required', 'string', Rule::in(User::ROLES)],
         ], [
             'name.required' => 'El nombre del usuario es obligatorio.',
             'email.required' => 'El correo electrónico es obligatorio.',
@@ -42,6 +43,7 @@ class UserController extends Controller
             'name' => trim($validated['name']),
             'email' => strtolower(trim($validated['email'])),
             'password' => Hash::make($validated['password']),
+            'role' => $validated['role'] ?? 'bartender',
         ]);
 
         return redirect()->route('users.index')->with('success', "Cuenta creada exitosamente para {$user->name}. Ya puede iniciar sesión.");
@@ -56,6 +58,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:6'],
+            'role' => ['sometimes', 'required', 'string', Rule::in(User::ROLES)],
         ], [
             'name.required' => 'El nombre del usuario es obligatorio.',
             'email.required' => 'El correo electrónico es obligatorio.',
@@ -66,6 +69,9 @@ class UserController extends Controller
 
         $user->name = trim($validated['name']);
         $user->email = strtolower(trim($validated['email']));
+        if (isset($validated['role'])) {
+            $user->role = $validated['role'];
+        }
 
         if (! empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);

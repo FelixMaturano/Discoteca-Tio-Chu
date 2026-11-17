@@ -75,6 +75,7 @@ class UserAdministrationTest extends TestCase
             'name' => 'Kelly Administradora Barra',
             'email' => 'kelly_barra@tiochu.com',
             'password' => 'newpassword123',
+            'role' => 'cajero',
         ]);
 
         $response->assertSessionHas('success');
@@ -82,6 +83,7 @@ class UserAdministrationTest extends TestCase
 
         $this->assertEquals('Kelly Administradora Barra', $targetUser->name);
         $this->assertEquals('kelly_barra@tiochu.com', $targetUser->email);
+        $this->assertEquals('cajero', $targetUser->role);
         $this->assertTrue(Hash::check('newpassword123', $targetUser->password));
     }
 
@@ -97,6 +99,7 @@ class UserAdministrationTest extends TestCase
             'name' => 'Admin 2',
             'email' => 'admin2@tiochu.com',
             'password' => Hash::make('pass12345'),
+            'role' => 'admin',
         ]);
 
         $responseDonLudo = $this->actingAs($otherAdmin)->delete(route('users.destroy', $this->admin));

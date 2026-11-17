@@ -15,9 +15,16 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, dom, fileinfo
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite
       - run: composer install --prefer-dist --no-progress --no-interaction
+      - run: |
+          cp .env.example .env
+          php artisan key:generate
       - run: ./vendor/bin/pint --test
+      - name: Análisis estático (PHPStan)
+        run: ./vendor/bin/phpstan analyse --memory-limit=1G
+      - name: Auditoría de dependencias
+        run: composer audit --locked
 
   phpunit-tests:
     name: Pruebas Unitarias e Integración (PHPUnit)

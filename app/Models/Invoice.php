@@ -30,6 +30,7 @@ class Invoice extends Model
         'net_amount' => 'decimal:2',
     ];
 
+    /** @return BelongsTo<NightSession, $this> */
     public function nightSession(): BelongsTo
     {
         return $this->belongsTo(NightSession::class);

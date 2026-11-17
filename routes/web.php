@@ -61,8 +61,8 @@ Route::middleware('auth')->group(function () {
         Route::match(['get', 'post'], '/consolidated-summary', [NightSessionController::class, 'consolidatedSummary'])->name('consolidatedSummary');
         Route::get('/create', [NightSessionController::class, 'create'])->name('create');
         Route::post('/', [NightSessionController::class, 'store'])->name('store');
-        Route::patch('/{session}/status', [NightSessionController::class, 'updateStatus'])->name('updateStatus');
-        Route::delete('/{session}', [NightSessionController::class, 'destroy'])->name('destroy');
+        Route::patch('/{session}/status', [NightSessionController::class, 'updateStatus'])->middleware('admin')->name('updateStatus');
+        Route::delete('/{session}', [NightSessionController::class, 'destroy'])->middleware('admin')->name('destroy');
     });
 
     // 3.5 Inventario de Barras (Apertura & Saldos)
@@ -121,7 +121,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/attendances', [CashClosingController::class, 'storeAttendance'])->name('attendances.store');
         Route::delete('/attendances/{attendance}', [CashClosingController::class, 'destroyAttendance'])->name('attendances.destroy');
         Route::post('/{session}/close', [CashClosingController::class, 'closeNight'])->name('close');
-        Route::post('/{session}/reopen', [CashClosingController::class, 'reopenNight'])->name('reopen');
+        Route::post('/{session}/reopen', [CashClosingController::class, 'reopenNight'])->middleware('admin')->name('reopen');
     });
 
     // 9. Galería Multimedia & Identidad Visual (Logos, Fondos, Bebidas)
@@ -138,10 +138,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile/avatar', [MediaController::class, 'removeAvatar'])->name('profile.avatar.remove');
 
     // 11. Administración de Usuarios (Cuentas autorizadas)
-    Route::resource('users', UserController::class)->except(['create', 'show', 'edit']);
+    Route::resource('users', UserController::class)->except(['create', 'show', 'edit'])->middleware('admin');
 
     // 12. Control del Servidor Remoto (Túnel Ngrok para Móviles e Internet)
-    Route::prefix('server')->name('server.')->group(function () {
+    Route::prefix('server')->name('server.')->middleware('admin:local')->group(function () {
         Route::get('/', [ServerTunnelController::class, 'index'])->name('index');
         Route::get('/status', [ServerTunnelController::class, 'status'])->name('status');
         Route::post('/toggle', [ServerTunnelController::class, 'toggle'])->name('toggle');

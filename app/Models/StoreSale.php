@@ -29,11 +29,13 @@ class StoreSale extends Model
         'qr_amount' => 'decimal:2',
     ];
 
+    /** @return BelongsTo<NightSession, $this> */
     public function nightSession(): BelongsTo
     {
         return $this->belongsTo(NightSession::class);
     }
 
+    /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

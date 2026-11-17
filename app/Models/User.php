@@ -13,6 +13,15 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ROLES = ['admin', 'bartender', 'cajero', 'bodeguero'];
+
+    public const ROLE_LABELS = [
+        'admin' => 'Administrador',
+        'bartender' => 'Bartender',
+        'cajero' => 'Cajero',
+        'bodeguero' => 'Bodeguero',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -23,6 +32,7 @@ class User extends Authenticatable
         'email',
         'password',
         'avatar',
+        'role',
     ];
 
     /**
@@ -46,6 +56,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 
     /**

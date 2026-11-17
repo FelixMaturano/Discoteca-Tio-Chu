@@ -62,7 +62,7 @@
         <div class="flex items-center justify-center gap-3 text-xs text-zinc-600 mt-1">
             <span>Día de Turno: <strong class="uppercase text-black">{{ $currentDay }}</strong></span>
             <span>•</span>
-            <span>Integrantes: <strong class="text-black">{{ $staffMembers->count() }} trabajadores</strong></span>
+            <span>Integrantes: <strong class="text-black">{{ $staffTotalCount }} trabajadores</strong></span>
             @if($activeSession)
                 <span>•</span>
                 <span>Noche Activa: <strong class="uppercase text-black">{{ $activeSession->day_name }} ({{ \Carbon\Carbon::parse($activeSession->session_date)->format('d/m/Y') }})</strong></span>
@@ -196,7 +196,7 @@
                     </button>
                 </div>
                 <div class="text-xs text-zinc-400 font-sans whitespace-nowrap hidden sm:flex items-center px-2.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800">
-                    <span id="staff-count-display">Total: <span class="text-white font-bold">{{ $staffMembers->count() }}</span></span>
+                    <span id="staff-count-display">Total: <span class="text-white font-bold">{{ $staffTotalCount }}</span></span>
                 </div>
             </div>
         </div>
@@ -204,19 +204,19 @@
         <!-- Fila 2: Filtros de Rol Oficiales de Don Ludo (Píldoras tipo Bodega Central) -->
         <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs border-t border-zinc-800/70 pt-2.5">
             <button type="button" onclick="filterByRole('all')" id="role-pill-all" class="role-pill px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap bg-[#F5B81C] text-black shadow-sm border border-[#F5B81C]">
-                Todos ({{ $staffMembers->count() }})
+                Todos ({{ $staffTotalCount }})
             </button>
             <button type="button" onclick="filterByRole('seguridad')" id="role-pill-seguridad" class="role-pill px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white">
-                1. Seguridad ({{ $staffMembers->filter(fn($m) => $m->getRoleCategory() === 'seguridad')->count() }})
+                1. Seguridad ({{ $staffRoleCounts->get('seguridad', 0) }})
             </button>
             <button type="button" onclick="filterByRole('barra')" id="role-pill-barra" class="role-pill px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white">
-                2. Barra ({{ $staffMembers->filter(fn($m) => $m->getRoleCategory() === 'barra')->count() }})
+                2. Barra ({{ $staffRoleCounts->get('barra', 0) }})
             </button>
             <button type="button" onclick="filterByRole('mozos')" id="role-pill-mozos" class="role-pill px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white">
-                3. Mozos ({{ $staffMembers->filter(fn($m) => $m->getRoleCategory() === 'mozos')->count() }})
+                3. Mozos ({{ $staffRoleCounts->get('mozos', 0) }})
             </button>
             <button type="button" onclick="filterByRole('limpieza')" id="role-pill-limpieza" class="role-pill px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white">
-                4. Limpieza ({{ $staffMembers->filter(fn($m) => $m->getRoleCategory() === 'limpieza')->count() }})
+                4. Limpieza ({{ $staffRoleCounts->get('limpieza', 0) }})
             </button>
         </div>
     </div>
@@ -270,7 +270,7 @@
                             <span class="text-white">{{ $catLabels[$memberRank] ?? 'PERSONAL' }}</span>
                         </div>
                         <span class="text-zinc-500 font-mono text-[11px] font-bold">
-                            {{ $staffMembers->filter(fn($m) => $m->getRoleCategoryRank() === $memberRank)->count() }} pers.
+                            {{ $staffRankCounts->get($memberRank, 0) }} pers.
                         </span>
                     </div>
                 @endif
@@ -401,7 +401,7 @@
                                             <span class="text-white">{{ $catLabels[$memberRank] ?? 'PERSONAL' }}</span>
                                         </div>
                                         <span class="text-zinc-500 font-mono text-[11px] font-bold">
-                                            {{ $staffMembers->filter(fn($m) => $m->getRoleCategoryRank() === $memberRank)->count() }} trabajadores
+                                            {{ $staffRankCounts->get($memberRank, 0) }} trabajadores
                                         </span>
                                     </div>
                                 </td>
@@ -526,6 +526,8 @@
             </table>
         </div>
     </div>
+
+    <div class="mt-4">{{ $staffMembers->links() }}</div>
 
     <!-- FIRMAS PARA REPORTE IMPRESO DE TURNO (OCULTO EN PANTALLA) -->
     <div class="hidden print-only pt-10 mt-8 border-t border-black text-center text-xs font-sans">
@@ -891,19 +893,19 @@
             <!-- Filtros de Rol Oficiales (Tarea 3) -->
             <div class="flex flex-wrap items-center gap-1.5 text-xs font-sans font-semibold">
                 <button type="button" onclick="filterModalByRole('all')" id="modal-role-pill-all" class="modal-role-pill px-3 py-1 rounded-lg border border-[#F5B81C] bg-[#F5B81C] text-black font-black transition-all cursor-pointer">
-                    Todos ({{ $allActiveStaff->count() }})
+                    Todos ({{ $allActiveStaffCount }})
                 </button>
                 <button type="button" onclick="filterModalByRole('seguridad')" id="modal-role-pill-seguridad" class="modal-role-pill px-3 py-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white transition-all cursor-pointer">
-                    1. Seguridad ({{ $allActiveStaff->filter(fn($m) => $m->getRoleCategory() === 'seguridad')->count() }})
+                    1. Seguridad ({{ $allActiveStaffRoleCounts->get('seguridad', 0) }})
                 </button>
                 <button type="button" onclick="filterModalByRole('barra')" id="modal-role-pill-barra" class="modal-role-pill px-3 py-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white transition-all cursor-pointer">
-                    2. Barra ({{ $allActiveStaff->filter(fn($m) => $m->getRoleCategory() === 'barra')->count() }})
+                    2. Barra ({{ $allActiveStaffRoleCounts->get('barra', 0) }})
                 </button>
                 <button type="button" onclick="filterModalByRole('mozos')" id="modal-role-pill-mozos" class="modal-role-pill px-3 py-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white transition-all cursor-pointer">
-                    3. Mozos ({{ $allActiveStaff->filter(fn($m) => $m->getRoleCategory() === 'mozos')->count() }})
+                    3. Mozos ({{ $allActiveStaffRoleCounts->get('mozos', 0) }})
                 </button>
                 <button type="button" onclick="filterModalByRole('limpieza')" id="modal-role-pill-limpieza" class="modal-role-pill px-3 py-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white transition-all cursor-pointer">
-                    4. Limpieza ({{ $allActiveStaff->filter(fn($m) => $m->getRoleCategory() === 'limpieza')->count() }})
+                    4. Limpieza ({{ $allActiveStaffRoleCounts->get('limpieza', 0) }})
                 </button>
             </div>
         </div>
@@ -971,12 +973,15 @@
                 @endif
             @endforeach
         </div>
+        @if($activeSession)
+            <div class="px-4 pb-2">{{ $allActiveStaff->links() }}</div>
+        @endif
 
         <!-- Sticky Footer con Contadores y Guardado -->
         <div class="p-3.5 sm:p-4 border-t border-zinc-800 bg-zinc-900/90 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
             <div class="flex items-center gap-3 text-xs sm:text-sm font-sans w-full sm:w-auto">
                 <span class="text-zinc-400">
-                    Seleccionados: <span id="shift-modal-selected-count" class="text-white font-mono font-bold text-base">0</span> de {{ $allActiveStaff->count() }}
+                    Seleccionados: <span id="shift-modal-selected-count" class="text-white font-mono font-bold text-base">0</span> de {{ $allActiveStaffCount }}
                 </span>
                 <span class="text-zinc-600">•</span>
                 <span class="text-zinc-400">
@@ -1006,6 +1011,34 @@
 <script>
     let currentRoleFilter = 'all';
     let modalRoleFilter = 'all';
+    const activeSessionId = {{ $activeSession ? $activeSession->id : 'null' }};
+    const initialShiftStaffIds = @json(array_map('intval', $currentSessionStaffIds));
+    const staffPayById = @json($staffPayById);
+    const shiftSelectionKey = `shift-staff-selection-${activeSessionId || 'none'}`;
+
+    function getPendingShiftStaffIds() {
+        const storedIds = sessionStorage.getItem(shiftSelectionKey);
+        const ids = storedIds === null ? initialShiftStaffIds : JSON.parse(storedIds);
+
+        return new Set(ids.map(id => Number(id)));
+    }
+
+    function setPendingShiftStaffIds(ids) {
+        sessionStorage.setItem(shiftSelectionKey, JSON.stringify(Array.from(ids)));
+    }
+
+    function updateModalCardAppearance(cb) {
+        const card = cb.closest('.modal-staff-card');
+        if (!card) return;
+
+        if (cb.checked) {
+            card.classList.remove('bg-zinc-900/80', 'bg-zinc-900', 'border-zinc-800', 'text-zinc-300');
+            card.classList.add('bg-[#F5B81C]/15', 'border-[#F5B81C]/70', 'text-white', 'shadow-sm');
+        } else {
+            card.classList.remove('bg-[#F5B81C]/15', 'border-[#F5B81C]/70', 'text-white', 'shadow-sm');
+            card.classList.add('bg-zinc-900/80', 'border-zinc-800', 'text-zinc-300');
+        }
+    }
 
     function openCreateStaffDrawer() {
         document.getElementById('staff-drawer-overlay').classList.add('is-open');
@@ -1171,29 +1204,18 @@
     }
 
     function onModalCheckboxChange(cb) {
-        const card = cb.closest('.modal-staff-card');
-        if (card) {
-            if (cb.checked) {
-                card.classList.remove('bg-zinc-900/80', 'bg-zinc-900', 'border-zinc-800', 'text-zinc-300');
-                card.classList.add('bg-[#F5B81C]/15', 'border-[#F5B81C]/70', 'text-white', 'shadow-sm');
-            } else {
-                card.classList.remove('bg-[#F5B81C]/15', 'border-[#F5B81C]/70', 'text-white', 'shadow-sm');
-                card.classList.add('bg-zinc-900/80', 'border-zinc-800', 'text-zinc-300');
-            }
-        }
+        const selectedIds = getPendingShiftStaffIds();
+        const staffId = Number(cb.value);
+        cb.checked ? selectedIds.add(staffId) : selectedIds.delete(staffId);
+        setPendingShiftStaffIds(selectedIds);
+        updateModalCardAppearance(cb);
         recalculateModalStats();
     }
 
     function recalculateModalStats() {
-        let count = 0;
-        let totalPay = 0;
-        document.querySelectorAll('.modal-staff-card').forEach(card => {
-            const cb = card.querySelector('.shift-checkbox');
-            if (cb && cb.checked) {
-                count++;
-                totalPay += parseFloat(card.getAttribute('data-pay') || 0);
-            }
-        });
+        const selectedIds = getPendingShiftStaffIds();
+        const count = selectedIds.size;
+        const totalPay = Array.from(selectedIds).reduce((total, id) => total + (parseFloat(staffPayById[id]) || 0), 0);
         const cntEl = document.getElementById('shift-modal-selected-count');
         const payEl = document.getElementById('shift-modal-total-pay');
         if (cntEl) cntEl.textContent = count;
@@ -1247,15 +1269,22 @@
     }
 
     function toggleAllModalCheckboxes(state) {
+        const selectedIds = getPendingShiftStaffIds();
+        if (!state) selectedIds.clear();
+
         document.querySelectorAll('.modal-staff-card').forEach(card => {
             if (card.style.display !== 'none') {
                 const cb = card.querySelector('.shift-checkbox');
                 if (cb) {
                     cb.checked = state;
-                    onModalCheckboxChange(cb);
+                    const staffId = Number(cb.value);
+                    state ? selectedIds.add(staffId) : selectedIds.delete(staffId);
+                    updateModalCardAppearance(cb);
                 }
             }
         });
+        setPendingShiftStaffIds(selectedIds);
+        recalculateModalStats();
     }
 
     async function saveShiftAttendance() {
@@ -1268,8 +1297,7 @@
             return;
         }
 
-        const checkedBoxes = document.querySelectorAll('#shift-selector-modal .shift-checkbox:checked');
-        const selectedIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+        const selectedIds = Array.from(getPendingShiftStaffIds());
 
         btn.disabled = true;
         btnText.textContent = 'Guardando...';
@@ -1290,6 +1318,7 @@
 
             const data = await res.json();
             if (res.ok && data.success) {
+                sessionStorage.removeItem(shiftSelectionKey);
                 showToast(data.message || 'Turno guardado con éxito');
                 closeShiftSelectorModal();
                 const badge = document.getElementById('header-shift-count-badge');
@@ -1337,7 +1366,15 @@
 
     // Inicializar contadores del modal
     document.addEventListener('DOMContentLoaded', function() {
+        const selectedIds = getPendingShiftStaffIds();
+        document.querySelectorAll('#shift-selector-modal .shift-checkbox').forEach(cb => {
+            cb.checked = selectedIds.has(Number(cb.value));
+            updateModalCardAppearance(cb);
+        });
         recalculateModalStats();
+        if (activeSessionId && new URLSearchParams(window.location.search).has('modal_page')) {
+            openShiftSelectorModal();
+        }
     });
 </script>
 @endsection

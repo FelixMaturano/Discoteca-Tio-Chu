@@ -234,18 +234,19 @@ class NightSessionTest extends TestCase
     public function test_session_create_form_loads_and_status_can_be_updated(): void
     {
         // Arrange
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
         $session = NightSession::create([
             'session_date' => '2026-10-14',
             'day_name' => 'Miércoles',
             'pos_commission_rate' => 0.013,
-            'status' => 'closed',
+            'status' => 'open',
         ]);
 
         // Act
         $createResponse = $this->get(route('sessions.create'));
         $updateResponse = $this->from(route('sessions.index'))
             ->patch(route('sessions.updateStatus', $session), [
-                'status' => 'open',
+                'status' => 'closed',
                 'pos_commission_rate' => 0.025,
             ]);
 
@@ -256,7 +257,7 @@ class NightSessionTest extends TestCase
         $updateResponse->assertSessionHas('success');
         $this->assertDatabaseHas('night_sessions', [
             'id' => $session->id,
-            'status' => 'open',
+            'status' => 'closed',
             'pos_commission_rate' => '0.0250',
         ]);
     }
@@ -264,11 +265,12 @@ class NightSessionTest extends TestCase
     public function test_session_status_rejects_invalid_values(): void
     {
         // Arrange
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
         $session = NightSession::create([
             'session_date' => '2026-10-14',
             'day_name' => 'Miércoles',
             'pos_commission_rate' => 0.013,
-            'status' => 'closed',
+            'status' => 'open',
         ]);
 
         // Act
@@ -280,7 +282,7 @@ class NightSessionTest extends TestCase
         $response->assertSessionHasErrors('status');
         $this->assertDatabaseHas('night_sessions', [
             'id' => $session->id,
-            'status' => 'closed',
+            'status' => 'open',
         ]);
     }
 

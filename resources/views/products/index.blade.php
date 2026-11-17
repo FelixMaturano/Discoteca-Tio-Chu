@@ -5,10 +5,6 @@
 @section('content')
 
 @php
-    $totalBottles   = $products->sum('stock_warehouse');
-    $totalValuation = $products->sum(fn($p) => $p->stock_warehouse * $p->sale_price);
-    $lowStockCount  = $products->filter(fn($p) => $p->stock_warehouse <= 10 && $p->is_active)->count();
-
     if (!function_exists('getDrinkCategory')) {
         function getDrinkCategory(string $name, string $cat): string {
             $n = mb_strtolower($name);
@@ -157,7 +153,7 @@
                     Variedad de Bebidas
                 </span>
                 <div class="text-2xl font-black theme-text-primary tracking-tight mt-0.5 font-sans truncate">
-                    {{ $products->where('is_active', true)->count() }} <span class="text-xs font-normal text-zinc-400">marcas</span>
+                    {{ $activeProductsCount }} <span class="text-xs font-normal text-zinc-400">marcas</span>
                 </div>
                 <span class="text-[10px] font-bold theme-text-secondary block mt-0.5">Bebidas activas en carta</span>
             </div>
@@ -201,7 +197,7 @@
         <div class="flex items-center gap-1.5 overflow-x-auto text-xs py-0.5" id="category-pills">
             @php
             $cats = [
-                'all'     => 'Todas (' . $products->count() . ')',
+                'all'     => 'Todas (' . $totalProducts . ')',
                 'Singani' => 'Singanis',
                 'Ron'     => 'Fernet & Rones',
                 'Whisky'  => 'Whiskys',
@@ -270,6 +266,7 @@
                         data-subcat="{{ $sub }}"
                         data-price="{{ $prod->sale_price }}"
                         data-stock="{{ $stock }}"
+                        data-active="{{ $prod->is_active ? '1' : '0' }}"
                         data-units-per-package="{{ $unitsPerPackage }}">
                         
                         <!-- Columna 1: Nombre & Presentación -->
@@ -842,6 +839,15 @@
             </div>
         </div>
     </form>
+    <div id="product-stats-baseline" class="hidden"
+         data-stock="{{ $totalBottles }}"
+         data-valuation="{{ $totalValuation }}"
+         data-low-stock="{{ $lowStockCount }}"
+         data-page-stock="{{ $products->sum('stock_warehouse') }}"
+         data-page-valuation="{{ $products->sum(fn($p) => $p->stock_warehouse * $p->sale_price) }}"
+         data-page-low-stock="{{ $products->filter(fn($p) => $p->stock_warehouse <= 10 && $p->is_active)->count() }}">
+    </div>
+    <div class="mt-4">{{ $products->links() }}</div>
     <form id="delete-prod-inline-form" method="POST" action="" class="hidden">
         @csrf
         @method('DELETE')
@@ -976,16 +982,20 @@ function showError(id) {
 
 /* --- ACTUALIZAR KPIS GLOBALES --- */
 function refreshKPIs() {
-    let total = 0, val = 0, low = 0;
+    const baseline = document.getElementById('product-stats-baseline');
+    let pageTotal = 0, pageValue = 0, pageLow = 0;
     document.querySelectorAll('#table-products-tbody .product-item').forEach(row => {
         const id = row.dataset.id;
         const inp = document.getElementById('stock-input-table-' + id);
         const s = inp ? (parseInt(inp.value) || 0) : (parseInt(row.dataset.stock) || 0);
         row.dataset.stock = s;
-        total += s;
-        val += s * (parseFloat(row.dataset.price) || 0);
-        if (s <= 10) low++;
+        pageTotal += s;
+        pageValue += s * (parseFloat(row.dataset.price) || 0);
+        if (s <= 10 && row.dataset.active === '1') pageLow++;
     });
+    const total = Number(baseline.dataset.stock) + pageTotal - Number(baseline.dataset.pageStock);
+    const val = Number(baseline.dataset.valuation) + pageValue - Number(baseline.dataset.pageValuation);
+    const low = Number(baseline.dataset.lowStock) + pageLow - Number(baseline.dataset.pageLowStock);
 
     const kb = document.getElementById('kpi-total-bottles');
     const kv = document.getElementById('kpi-valuation');

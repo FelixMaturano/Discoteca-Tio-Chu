@@ -25,7 +25,13 @@ class BarInventoryController extends Controller
     public function index(Request $request)
     {
         $session = $this->sessionService->resolveSession($request->get('session_id'));
-        $allSessions = NightSession::orderByDesc('session_date')->get();
+        $allSessions = NightSession::query()
+            ->orderByDesc('session_date')
+            ->limit(25)
+            ->get(['id', 'day_name', 'session_date', 'status']);
+        if ($session && ! $allSessions->contains('id', $session->id)) {
+            $allSessions->prepend($session);
+        }
 
         $rawBar = $request->get('bar', 'Barra Principal');
         $selectedBar = match ($rawBar) {
@@ -37,6 +43,7 @@ class BarInventoryController extends Controller
 
         $liquorSales = collect();
         $mixerSales = collect();
+        $inventorySales = collect();
         $previousSession = null;
 
         if ($session) {
@@ -75,13 +82,16 @@ class BarInventoryController extends Controller
                 }
             }
 
-            $allBarSales = BarSale::with('product')
+            $inventorySales = BarSale::with('product')
+                ->whereHas('product')
                 ->where('night_session_id', $session->id)
                 ->where('bar_name', $selectedBar)
-                ->get();
+                ->orderBy('id')
+                ->paginate(10)
+                ->withQueryString();
 
-            $liquorSales = $allBarSales->filter(fn ($s) => $s->product && $s->product->category !== 'Mixers');
-            $mixerSales = $allBarSales->filter(fn ($s) => $s->product && $s->product->category === 'Mixers');
+            $liquorSales = $inventorySales->getCollection()->filter(fn ($s) => $s->product && $s->product->category !== 'Mixers');
+            $mixerSales = $inventorySales->getCollection()->filter(fn ($s) => $s->product && $s->product->category === 'Mixers');
         }
 
         return view('bar_inventory.index', compact(
@@ -91,6 +101,7 @@ class BarInventoryController extends Controller
             'availableBars',
             'liquorSales',
             'mixerSales',
+            'inventorySales',
             'previousSession'
         ));
     }

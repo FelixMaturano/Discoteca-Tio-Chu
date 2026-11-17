@@ -21,7 +21,17 @@ class ProductController extends Controller
             $query->where('category', $category);
         }
 
-        $products = $query->orderBy('id')->get();
+        $products = (clone $query)->orderBy('id')->paginate(5)->withQueryString();
+        $totalBottles = (int) (clone $query)->sum('stock_warehouse');
+        $totalValuation = (float) (clone $query)
+            ->selectRaw('COALESCE(SUM(stock_warehouse * sale_price), 0) as valuation')
+            ->value('valuation');
+        $lowStockCount = (clone $query)
+            ->where('stock_warehouse', '<=', 10)
+            ->where('is_active', true)
+            ->count();
+        $activeProductsCount = (clone $query)->where('is_active', true)->count();
+        $totalProducts = (clone $query)->count();
         $categories = Product::select('category')->distinct()->pluck('category');
 
         $drinkImages = [];
@@ -39,7 +49,17 @@ class ProductController extends Controller
             }
         }
 
-        return view('products.index', compact('products', 'categories', 'category', 'drinkImages'));
+        return view('products.index', compact(
+            'products',
+            'categories',
+            'category',
+            'drinkImages',
+            'totalBottles',
+            'totalValuation',
+            'lowStockCount',
+            'activeProductsCount',
+            'totalProducts'
+        ));
     }
 
     public function create()

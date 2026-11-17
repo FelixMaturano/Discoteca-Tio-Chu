@@ -600,6 +600,37 @@ class Sprint4FeaturesTest extends TestCase
         $this->assertEquals('closed', $session->status);
     }
 
+    public function test_closed_session_cannot_be_deleted_or_updated(): void
+    {
+        $this->actingAs($this->user);
+
+        $session = NightSession::create([
+            'session_date' => '2026-12-05',
+            'day_name' => 'Sábado',
+            'pos_commission_rate' => 0.05,
+            'opening_cash' => 100.00,
+            'status' => 'closed',
+        ]);
+
+        $indexResponse = $this->get(route('sessions.index'));
+        $indexResponse->assertDontSee(route('sessions.destroy', $session));
+
+        $deleteResponse = $this->delete(route('sessions.destroy', $session));
+        $deleteResponse->assertForbidden();
+        $deleteResponse->assertSee('No se puede modificar ni eliminar una sesión cerrada');
+        $this->assertDatabaseHas('night_sessions', ['id' => $session->id]);
+
+        $updateResponse = $this->patch(route('sessions.updateStatus', $session), [
+            'status' => 'open',
+        ]);
+        $updateResponse->assertForbidden();
+        $updateResponse->assertSee('No se puede modificar ni eliminar una sesión cerrada');
+        $this->assertDatabaseHas('night_sessions', [
+            'id' => $session->id,
+            'status' => 'closed',
+        ]);
+    }
+
     // =========================================================================
     // HISTORIA H10: VISTA TÁCTIL BODEGA (TC-H10-01 .. TC-H10-04)
     // =========================================================================
@@ -689,9 +720,10 @@ class Sprint4FeaturesTest extends TestCase
 
         $this->assertGreaterThanOrEqual(30, Product::count());
 
-        $response = $this->get(route('products.index'));
+        $secondPageProduct = Product::orderBy('id')->skip(5)->firstOrFail();
+        $response = $this->get(route('products.index', ['page' => 2]));
         $response->assertStatus(200);
-        $response->assertSee('Bebida Especial Vol 1');
+        $response->assertSee($secondPageProduct->name);
     }
 
     public function test_tc_h10_04_quick_stock_prevents_negative_inventory(): void

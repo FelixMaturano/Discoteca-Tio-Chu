@@ -7,35 +7,46 @@ use App\Models\CashClosing;
 use App\Models\CategoryMixerOption;
 use App\Models\NightSession;
 use App\Models\Product;
+use App\Services\BarSaleCalculationService;
 use App\Services\NightSessionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class BarSaleController extends Controller
 {
     protected NightSessionService $sessionService;
 
-    public function __construct(NightSessionService $sessionService)
+    protected BarSaleCalculationService $calculationService;
+
+    public function __construct(NightSessionService $sessionService, BarSaleCalculationService $calculationService)
     {
         $this->sessionService = $sessionService;
+        $this->calculationService = $calculationService;
     }
 
     public function index(Request $request)
     {
         $session = $this->sessionService->resolveSession($request->get('session_id'));
-        $allSessions = NightSession::orderByDesc('session_date')->get();
+        $allSessions = NightSession::query()
+            ->orderByDesc('session_date')
+            ->limit(25)
+            ->get(['id', 'day_name', 'session_date', 'status']);
+        if ($session && ! $allSessions->contains('id', $session->id)) {
+            $allSessions->prepend($session);
+        }
 
-        $rawBar = $request->get('bar', 'Barra Principal');
-        $selectedBar = match ($rawBar) {
-            'Barra Kelly (Principal)', 'Kelly', 'Principal' => 'Barra Principal',
-            'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo' => 'Barra Subterráneo',
-            'Tienda' => 'Tienda',
-            default => $rawBar,
-        };
+        $selectedBar = $this->normalizeBarName($request->get('bar', 'Barra Principal'));
         $availableBars = ['Barra Principal', 'Barra Subterráneo', 'Tienda'];
 
+        $allBarSales = collect();
+        $allBarSalesPage = collect();
         $liquorSales = collect();
         $mixerSales = collect();
+        $liquorSalesPage = collect();
+        $mixerSalesPage = collect();
         $totalLiquorCombos = 0;
         $subtotalLiquors = 0;
         $totalMixerConsumed = 0;
@@ -48,44 +59,49 @@ class BarSaleController extends Controller
         $specialMixerOptions = collect();
         $categories = [];
         $allMixerProducts = collect();
-        $storeSales = collect();
+        $storeSalesQrTotal = 0;
+        $storeSalesCardTotal = 0;
         $totalStoreSales = 0;
-        $allProducts = collect();
 
         if ($session) {
             $closing = CashClosing::firstOrCreate(['night_session_id' => $session->id]);
-
-            // Pagos QR y Facturas/Tarjetas vinculados al punto de venta actual
-            if ($selectedBar === 'Tienda') {
-                $qrPosNames = ['Tienda', 'tienda'];
-                $invoiceBarNames = ['Tienda', 'tienda'];
-            } elseif (str_contains($selectedBar, 'Subte') || str_contains($selectedBar, 'Ariel') || str_contains($selectedBar, 'Subterráneo') || str_contains($selectedBar, 'Subterraneo')) {
-                $qrPosNames = ['Barra Subterráneo', 'Subte', 'Barra Subte', 'Subterráneo', 'Subterraneo', 'Barra Ariel (Subte)', 'Ariel'];
-                $invoiceBarNames = ['Barra Subterráneo', 'Subterráneo', 'Subterraneo', 'Subte', 'Barra Ariel (Subte)', 'Ariel'];
-            } else {
-                // Barra Principal
-                $qrPosNames = ['Barra Principal', 'Principal', 'Barra Kelly (Principal)', 'Kelly'];
-                $invoiceBarNames = ['Barra Principal', 'Principal', 'Barra Kelly (Principal)', 'Kelly'];
-            }
+            [$qrPosNames, $invoiceBarNames] = $this->paymentPointNames($selectedBar);
 
             $barQrPayments = $session->qrPayments()
                 ->whereIn('point_of_sale', $qrPosNames)
                 ->orderByDesc('id')
-                ->get();
+                ->paginate(25, ['*'], 'qr_page')
+                ->withQueryString();
+            $barTotalQrYasta = (float) $session->qrPayments()
+                ->whereIn('point_of_sale', $qrPosNames)
+                ->where('bank_app', 'YASTA')
+                ->sum('amount');
+            $barTotalQrYape = (float) $session->qrPayments()
+                ->whereIn('point_of_sale', $qrPosNames)
+                ->where('bank_app', 'YAPE')
+                ->sum('amount');
+            $barTotalQr = (float) $session->qrPayments()
+                ->whereIn('point_of_sale', $qrPosNames)
+                ->sum('amount');
 
-            $barTotalQrYasta = (float) $barQrPayments->where('bank_app', 'YASTA')->sum('amount');
-            $barTotalQrYape = (float) $barQrPayments->where('bank_app', 'YAPE')->sum('amount');
-            $barTotalQr = (float) $barQrPayments->sum('amount');
-
-            $barInvoices = $session->invoices()
+            $barCardInvoices = $session->invoices()
                 ->whereIn('bar_name', $invoiceBarNames)
+                ->where('payment_method', 'tarjeta')
                 ->orderBy('correlative_num')
-                ->get();
-
-            $barCardInvoices = $barInvoices->where('payment_method', 'tarjeta');
-            $barTotalCard = (float) $barCardInvoices->sum('amount');
-            $barTotalCardCommission = (float) $barCardInvoices->sum('commission_amount');
-            $barTotalCardNet = (float) $barCardInvoices->sum('net_amount');
+                ->paginate(25, ['*'], 'card_page')
+                ->withQueryString();
+            $barTotalCard = (float) $session->invoices()
+                ->whereIn('bar_name', $invoiceBarNames)
+                ->where('payment_method', 'tarjeta')
+                ->sum('amount');
+            $barTotalCardCommission = (float) $session->invoices()
+                ->whereIn('bar_name', $invoiceBarNames)
+                ->where('payment_method', 'tarjeta')
+                ->sum('commission_amount');
+            $barTotalCardNet = (float) $session->invoices()
+                ->whereIn('bar_name', $invoiceBarNames)
+                ->where('payment_method', 'tarjeta')
+                ->sum('net_amount');
 
             // Barras tradicionales (Principal y Subte): Apertura, Unidades, Saldo y deducción de sodas
             if ($session->isOpen()) {
@@ -172,130 +188,44 @@ class BarSaleController extends Controller
             }
 
             $allBarSales = BarSale::with('product')
+                ->whereHas('product')
                 ->where('night_session_id', $session->id)
                 ->where('bar_name', $selectedBar)
                 ->get();
 
-            $liquorSales = $allBarSales->filter(fn ($s) => $s->product && $s->product->category !== 'Mixers');
-            $mixerSales = $allBarSales->filter(fn ($s) => $s->product && $s->product->category === 'Mixers');
+            $totalStoreSales = (float) $session->storeSales()->sum('total_price');
+            $storeSalesQrTotal = (float) $session->storeSales()->sum('qr_amount');
+            $storeSalesCardTotal = (float) $session->storeSales()->sum('card_amount');
+            $summary = $this->calculationService->summarize(
+                $allBarSales,
+                $selectedBar === 'Tienda',
+                $mapping,
+                $totalStoreSales
+            );
+            $allBarSales = $summary['allBarSales'];
+            $liquorSales = $summary['liquorSales'];
+            $mixerSales = $summary['mixerSales'];
+            $totalTiendaUnits = $summary['totalTiendaUnits'];
+            $totalLiquorCombos = $summary['totalLiquorCombos'];
+            $subtotalLiquors = $summary['subtotalLiquors'];
+            $totalMixerConsumed = $summary['totalMixerConsumed'];
+            $totalMixerExtras = $summary['totalMixerExtras'];
+            $subtotalMixers = $summary['subtotalMixers'];
+            $grandTotalBar = $summary['grandTotalBar'];
 
             if ($selectedBar === 'Tienda') {
-                $allBarSales = $allBarSales->sort(function ($a, $b) {
-                    $isMixerA = $a->product?->category === 'Mixers' ? 1 : 0;
-                    $isMixerB = $b->product?->category === 'Mixers' ? 1 : 0;
-                    if ($isMixerA !== $isMixerB) {
-                        return $isMixerA <=> $isMixerB;
-                    }
-
-                    return ($a->product?->id ?? $a->product_id) <=> ($b->product?->id ?? $b->product_id);
-                })->values();
-
-                // Calcular mixers incluidos en combos para Tienda (igual que en las otras barras)
-                $combosPerMixer = [];
-                $liquorsTienda = $allBarSales->filter(fn ($s) => $s->product && $s->product->category !== 'Mixers');
-
-                foreach ($liquorsTienda as $liq) {
-                    $specialMixers = [];
-                    if (! empty($liq->selected_special_mixer)) {
-                        $decoded = is_string($liq->selected_special_mixer) ? json_decode($liq->selected_special_mixer, true) : $liq->selected_special_mixer;
-                        if (is_array($decoded)) {
-                            $specialMixers = $decoded;
-                        }
-                    }
-
-                    $vendido = (int) $liq->vendido;
-                    $specialCount = 0;
-
-                    foreach ($specialMixers as $specialMixerId => $qty) {
-                        $qty = (int) $qty;
-                        if ($qty > 0 && $specialMixerId) {
-                            $specialMixerId = (int) $specialMixerId;
-                            $combosPerMixer[$specialMixerId] = ($combosPerMixer[$specialMixerId] ?? 0) + $qty;
-                            $specialCount += $qty;
-                        }
-                    }
-
-                    $mixerInfo = $mapping[$liq->product_id] ?? null;
-                    if ($mixerInfo) {
-                        $defaultMixerId = (int) $mixerInfo['mixer_id'];
-                        $ratio = $mixerInfo['ratio'] ?? 1;
-                        $remainingCombos = max(0, $vendido - $specialCount);
-                        $combosPerMixer[$defaultMixerId] = ($combosPerMixer[$defaultMixerId] ?? 0) + ($remainingCombos * $ratio);
-                    }
-                }
-
-                foreach ($allBarSales as $sale) {
-                    if ($sale->product && $sale->product->category === 'Mixers') {
-                        $included = $combosPerMixer[$sale->product_id] ?? 0;
-                        $sale->included_in_combos = $included;
-                        if ((int) $sale->vendido < $included) {
-                            $sale->vendido = $included;
-                        }
-                        $extras = max(0, (int) $sale->vendido - $included);
-                        $sale->subtotal = $extras * (float) $sale->unit_price;
-                    } else {
-                        $sale->subtotal = (int) $sale->vendido * (float) $sale->unit_price;
-                    }
-                }
-
-                $totalTiendaUnits = (int) $allBarSales->sum('vendido');
-                $grandTotalBar = (float) $allBarSales->sum('subtotal') + (float) ($session->storeSales()->sum('total_price'));
+                $allBarSalesPage = $this->paginateCollection($allBarSales, $request, 'sales_page');
             } else {
-                $totalTiendaUnits = 0;
-                // Calcular cuántos mixers se cubrieron por los combos vendidos de licores (con deducción de especiales)
-                $combosPerMixer = [];
-                foreach ($liquorSales as $liq) {
-                    $specialMixers = [];
-                    if (! empty($liq->selected_special_mixer)) {
-                        $decoded = is_string($liq->selected_special_mixer) ? json_decode($liq->selected_special_mixer, true) : $liq->selected_special_mixer;
-                        if (is_array($decoded)) {
-                            $specialMixers = $decoded;
-                        }
-                    }
-
-                    $vendido = (int) $liq->vendido;
-                    $specialCount = 0;
-
-                    foreach ($specialMixers as $specialMixerId => $qty) {
-                        $qty = (int) $qty;
-                        if ($qty > 0 && $specialMixerId) {
-                            $specialMixerId = (int) $specialMixerId;
-                            $combosPerMixer[$specialMixerId] = ($combosPerMixer[$specialMixerId] ?? 0) + $qty;
-                            $specialCount += $qty;
-                        }
-                    }
-
-                    $mixerInfo = $mapping[$liq->product_id] ?? null;
-                    if ($mixerInfo) {
-                        $defaultMixerId = (int) $mixerInfo['mixer_id'];
-                        $ratio = $mixerInfo['ratio'] ?? 1;
-                        $remainingCombos = max(0, $vendido - $specialCount);
-                        $combosPerMixer[$defaultMixerId] = ($combosPerMixer[$defaultMixerId] ?? 0) + ($remainingCombos * $ratio);
-                    }
-                }
-
-                // Calcular extras para cada mixer
-                foreach ($mixerSales as $mix) {
-                    $mix->included_in_combos = $combosPerMixer[$mix->product_id] ?? 0;
-                    $mix->extras = max(0, (int) $mix->vendido - $mix->included_in_combos);
-                    $mix->subtotal = $mix->extras * (float) $mix->unit_price;
-                }
-
-                $totalLiquorCombos = $liquorSales->sum('vendido');
-                $subtotalLiquors = $liquorSales->sum('subtotal');
-                $totalMixerConsumed = $mixerSales->sum('vendido');
-                $totalMixerExtras = $mixerSales->sum('extras');
-                $subtotalMixers = $mixerSales->sum('subtotal');
-                $grandTotalBar = $subtotalLiquors + $subtotalMixers;
+                $liquorSalesPage = $this->paginateCollection($liquorSales, $request, 'liquors_page');
+                $mixerSalesPage = $this->paginateCollection($mixerSales, $request, 'mixers_page');
             }
 
             // Obtener mixers especiales y categorías de tragos
             $specialMixerOptions = CategoryMixerOption::all()->groupBy('category');
             $categories = Product::getDrinkSubcategories();
-            $allMixerProducts = Product::where('category', 'Mixers')->where('is_active', true)->get();
-            $storeSales = $session->storeSales()->with('product')->orderByDesc('id')->get();
-            $totalStoreSales = (float) $storeSales->sum('total_price');
-            $allProducts = Product::where('is_active', true)->orderBy('name')->get();
+            $allMixerProducts = Product::where('category', 'Mixers')
+                ->where('is_active', true)
+                ->get(['id', 'name', 'sale_price']);
 
             $barCashRemaining = max(0, $grandTotalBar - $barTotalQr - $barTotalCardNet);
         } else {
@@ -305,15 +235,14 @@ class BarSaleController extends Controller
             $barTotalQr = 0;
             $barTotalQrYasta = 0;
             $barTotalQrYape = 0;
-            $barInvoices = collect();
             $barCardInvoices = collect();
             $barTotalCard = 0;
             $barTotalCardCommission = 0;
             $barTotalCardNet = 0;
             $barCashRemaining = 0;
-            $storeSales = collect();
+            $storeSalesQrTotal = 0;
+            $storeSalesCardTotal = 0;
             $totalStoreSales = 0;
-            $allProducts = collect();
         }
 
         return view('sales.index', compact(
@@ -324,6 +253,9 @@ class BarSaleController extends Controller
             'liquorSales',
             'mixerSales',
             'allBarSales',
+            'liquorSalesPage',
+            'mixerSalesPage',
+            'allBarSalesPage',
             'totalTiendaUnits',
             'mapping',
             'totalLiquorCombos',
@@ -340,17 +272,76 @@ class BarSaleController extends Controller
             'barTotalQr',
             'barTotalQrYasta',
             'barTotalQrYape',
-            'barInvoices',
             'barCardInvoices',
             'barTotalCard',
             'barTotalCardCommission',
             'barTotalCardNet',
             'barCashRemaining',
-            'storeSales',
+            'storeSalesQrTotal',
+            'storeSalesCardTotal',
             'totalStoreSales',
-            'allProducts'
         ));
 
+    }
+
+    /**
+     * @return array{0: array<int, string>, 1: array<int, string>}
+     */
+    private function paymentPointNames(string $selectedBar): array
+    {
+        if ($selectedBar === 'Tienda') {
+            return [['Tienda', 'tienda'], ['Tienda', 'tienda']];
+        }
+
+        if (str_contains($selectedBar, 'Subte') || str_contains($selectedBar, 'Ariel') || str_contains($selectedBar, 'Subterráneo') || str_contains($selectedBar, 'Subterraneo')) {
+            return [
+                ['Barra Subterráneo', 'Subte', 'Barra Subte', 'Subterráneo', 'Subterraneo', 'Barra Ariel (Subte)', 'Ariel'],
+                ['Barra Subterráneo', 'Subterráneo', 'Subterraneo', 'Subte', 'Barra Ariel (Subte)', 'Ariel'],
+            ];
+        }
+
+        return [
+            ['Barra Principal', 'Principal', 'Barra Kelly (Principal)', 'Kelly'],
+            ['Barra Principal', 'Principal', 'Barra Kelly (Principal)', 'Kelly'],
+        ];
+    }
+
+    private function normalizeBarName(mixed $rawBar): string
+    {
+        if (! is_string($rawBar)) {
+            return 'Barra Principal';
+        }
+
+        return match ($rawBar) {
+            'Barra Kelly (Principal)', 'Kelly', 'Principal' => 'Barra Principal',
+            'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo' => 'Barra Subterráneo',
+            'Tienda' => 'Tienda',
+            default => $rawBar,
+        };
+    }
+
+    /**
+     * @template TItem
+     *
+     * @param  Collection<int, TItem>  $items
+     * @return LengthAwarePaginator<TItem>
+     */
+    private function paginateCollection(Collection $items, Request $request, string $pageName): LengthAwarePaginator
+    {
+        $perPage = 10;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
+
+        return new LengthAwarePaginator(
+            $items->forPage($currentPage, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+                'pageName' => $pageName,
+            ]
+        );
     }
 
     public function storeSpecialMixer(Request $request)
@@ -373,299 +364,48 @@ class BarSaleController extends Controller
 
     public function updateBulk(Request $request)
     {
+        return DB::transaction(fn () => $this->updateBulkTransaction($request), 3);
+    }
+
+    private function updateBulkTransaction(Request $request)
+    {
         $sessionId = $request->input('night_session_id');
-        $session = NightSession::find($sessionId);
+        $sessionId = $sessionId ? (int) $sessionId : null;
+        $session = $sessionId
+            ? NightSession::query()->lockForUpdate()->find($sessionId)
+            : null;
         if ($session && ! $session->isOpen()) {
             return back()->with('error', 'La noche está cerrada. Para modificar ventas o combos, reabre la noche desde Cierre de Caja.');
         }
 
-        $rows = $request->input('sales', []);
+        $validatedSales = $request->validate([
+            'sales' => 'sometimes|array',
+            'sales.*' => 'array',
+        ]);
+        $rows = $validatedSales['sales'] ?? [];
+
         $mapping = Product::getMixerMapping();
-        $rawBar = $request->input('bar_name', 'Barra Principal');
-        $barName = match ($rawBar) {
-            'Barra Kelly (Principal)', 'Kelly', 'Principal' => 'Barra Principal',
-            'Barra Ariel (Subte)', 'Ariel', 'Subte', 'Subterraneo', 'Subterráneo' => 'Barra Subterráneo',
-            'Tienda' => 'Tienda',
-            default => $rawBar,
-        };
-
-        if ($barName === 'Tienda') {
-            $updatedMixers = [];
-            $combosPerMixer = [];
-
-            // 1ra pasada: Licores
-            foreach ($rows as $id => $data) {
-                $barSale = BarSale::with('product')->find($id);
-                if (! $barSale) {
-                    continue;
-                }
-
-                if (isset($data['selected_special_mixer'])) {
-                    $specialVal = $data['selected_special_mixer'];
-                    if (is_string($specialVal) && (str_starts_with($specialVal, '{') || str_starts_with($specialVal, '['))) {
-                        $barSale->selected_special_mixer = $specialVal;
-                    } elseif (is_array($specialVal)) {
-                        $barSale->selected_special_mixer = json_encode($specialVal);
-                    } else {
-                        $barSale->selected_special_mixer = $specialVal;
-                    }
-                }
-
-                $vendido = max(0, (int) ($data['vendido'] ?? 0));
-                $unitPrice = isset($data['unit_price']) && is_numeric($data['unit_price'])
-                    ? (float) $data['unit_price']
-                    : (float) ($barSale->unit_price ?? $barSale->product?->sale_price ?? 0);
-
-                if ($barSale->product && $barSale->product->category === 'Mixers') {
-                    $updatedMixers[$id] = [
-                        'sale' => $barSale,
-                        'vendido' => $vendido,
-                        'unitPrice' => $unitPrice,
-                    ];
-                } else {
-                    $subtotal = $vendido * $unitPrice;
-                    $barSale->packages = 0;
-                    $barSale->units = 0;
-                    $barSale->total_initial = $vendido;
-                    $barSale->saldo = 0;
-                    $barSale->vendido = $vendido;
-                    $barSale->unit_price = $unitPrice;
-                    $barSale->subtotal = $subtotal;
-                    $this->syncProductStock($barSale);
-                    $barSale->save();
-
-                    // Acumular mixers incluidos en combos (con especiales)
-                    $specialMixers = [];
-                    if (! empty($barSale->selected_special_mixer)) {
-                        $decoded = is_string($barSale->selected_special_mixer)
-                            ? json_decode($barSale->selected_special_mixer, true)
-                            : $barSale->selected_special_mixer;
-                        if (is_array($decoded)) {
-                            $specialMixers = $decoded;
-                        }
-                    }
-
-                    $specialCount = 0;
-                    foreach ($specialMixers as $specialMixerId => $qty) {
-                        $qty = (int) $qty;
-                        if ($qty > 0 && $specialMixerId) {
-                            $specialMixerId = (int) $specialMixerId;
-                            $combosPerMixer[$specialMixerId] = ($combosPerMixer[$specialMixerId] ?? 0) + $qty;
-                            $specialCount += $qty;
-                        }
-                    }
-
-                    $mixerInfo = $mapping[$barSale->product_id] ?? null;
-                    if ($mixerInfo) {
-                        $defaultMixerId = (int) $mixerInfo['mixer_id'];
-                        $ratio = $mixerInfo['ratio'] ?? 1;
-                        $remainingCombos = max(0, $vendido - $specialCount);
-                        $combosPerMixer[$defaultMixerId] = ($combosPerMixer[$defaultMixerId] ?? 0) + ($remainingCombos * $ratio);
-                    }
-                }
-            }
-
-            // 2da pasada: Mixers en Tienda
-            foreach ($updatedMixers as $id => $item) {
-                $barSale = $item['sale'];
-                $userVendido = $item['vendido'];
-                $unitPrice = $item['unitPrice'];
-
-                $includedInCombos = $combosPerMixer[$barSale->product_id] ?? 0;
-                $totalSoldOrConsumed = max($userVendido, $includedInCombos);
-                $extras = max(0, $totalSoldOrConsumed - $includedInCombos);
-                $subtotal = $extras * $unitPrice;
-
-                $barSale->packages = 0;
-                $barSale->units = 0;
-                $barSale->total_initial = $totalSoldOrConsumed;
-                $barSale->saldo = 0;
-                $barSale->vendido = $totalSoldOrConsumed;
-                $barSale->unit_price = $unitPrice;
-                $barSale->subtotal = $subtotal;
-                $this->syncProductStock($barSale);
-                $barSale->save();
-            }
-
-            // Sincronizar mixers que no vinieron explícitamente en $rows pero tienen combos incluidos
-            $processedMixerIds = collect($updatedMixers)->pluck('sale.product_id')->toArray();
-            foreach ($combosPerMixer as $mixerProdId => $qtyIncluded) {
-                if ($qtyIncluded > 0 && ! in_array($mixerProdId, $processedMixerIds)) {
-                    $mixerSale = BarSale::where('night_session_id', $sessionId)
-                        ->where('bar_name', 'Tienda')
-                        ->where('product_id', $mixerProdId)
-                        ->first();
-                    if ($mixerSale) {
-                        $mixerSale->vendido = max((int) $mixerSale->vendido, $qtyIncluded);
-                        $mixerSale->subtotal = max(0, (int) $mixerSale->vendido - $qtyIncluded) * (float) $mixerSale->unit_price;
-                        $this->syncProductStock($mixerSale);
-                        $mixerSale->save();
-                    }
-                }
-            }
-        } else {
-            // 1ra pasada: Actualizar inventario de licores y calcular subtotal de combos
-            $updatedSales = [];
-            $combosPerMixer = [];
-
-            foreach ($rows as $id => $data) {
-                $barSale = BarSale::with('product')->find($id);
-                if (! $barSale) {
-                    continue;
-                }
-
-                if (isset($data['selected_special_mixer'])) {
-                    $specialVal = $data['selected_special_mixer'];
-                    if (is_string($specialVal) && (str_starts_with($specialVal, '{') || str_starts_with($specialVal, '['))) {
-                        $barSale->selected_special_mixer = $specialVal;
-                    } elseif (is_array($specialVal)) {
-                        $barSale->selected_special_mixer = json_encode($specialVal);
-                    } else {
-                        $barSale->selected_special_mixer = $specialVal;
-                    }
-                }
-
-                $packages = (int) ($data['packages'] ?? 0);
-                $units = (int) ($data['units'] ?? 0);
-                $saldo = (int) ($data['saldo'] ?? 0);
-                $unitPrice = (float) ($data['unit_price'] ?? $barSale->unit_price);
-
-                $unitsPerPkg = $barSale->product ? (int) ($barSale->product->units_per_package ?? 1) : 1;
-                if ($unitsPerPkg < 1) {
-                    $unitsPerPkg = 1;
-                }
-
-                // Recalcular total inicial y vendido desde packages/units/saldo
-                $totalInitial = ($packages * $unitsPerPkg) + $units;
-                $vendido = max(0, $totalInitial - $saldo);
-
-                $barSale->packages = $packages;
-                $barSale->units = $units;
-                $barSale->total_initial = $totalInitial;
-                $barSale->saldo = $saldo;
-                $barSale->vendido = $vendido;
-                $barSale->unit_price = $unitPrice;
-                $this->syncProductStock($barSale);
-
-                if ($barSale->product && $barSale->product->category !== 'Mixers') {
-                    $barSale->subtotal = $vendido * $unitPrice;
-                    $barSale->save();
-
-                    // Acumular mixers incluidos en combos (con especiales)
-                    $specialMixers = [];
-                    if (! empty($barSale->selected_special_mixer)) {
-                        $decoded = is_string($barSale->selected_special_mixer)
-                            ? json_decode($barSale->selected_special_mixer, true)
-                            : $barSale->selected_special_mixer;
-                        if (is_array($decoded)) {
-                            $specialMixers = $decoded;
-                        }
-                    }
-
-                    $specialCount = 0;
-                    foreach ($specialMixers as $specialMixerId => $qty) {
-                        $qty = (int) $qty;
-                        if ($qty > 0 && $specialMixerId) {
-                            $specialMixerId = (int) $specialMixerId;
-                            $combosPerMixer[$specialMixerId] = ($combosPerMixer[$specialMixerId] ?? 0) + $qty;
-                            $specialCount += $qty;
-                        }
-                    }
-
-                    $mixerInfo = $mapping[$barSale->product_id] ?? null;
-                    if ($mixerInfo) {
-                        $defaultMixerId = (int) $mixerInfo['mixer_id'];
-                        $ratio = $mixerInfo['ratio'] ?? 1;
-                        $remainingCombos = max(0, $vendido - $specialCount);
-                        $combosPerMixer[$defaultMixerId] = ($combosPerMixer[$defaultMixerId] ?? 0) + ($remainingCombos * $ratio);
-                    }
-                } else {
-                    // Mixer — guardar pendiente para 2da pasada
-                    $updatedSales[$id] = $barSale;
-                }
-            }
-
-            // 2da pasada: Guardar mixers con descuento de combos incluidos
-            foreach ($updatedSales as $id => $mixerSale) {
-                $includedInCombos = $combosPerMixer[$mixerSale->product_id] ?? 0;
-                $extras = max(0, $mixerSale->vendido - $includedInCombos);
-                $mixerSale->subtotal = $extras * $mixerSale->unit_price;
-                $mixerSale->save();
-            }
-
-            // Propagar saldos a la siguiente noche si existe (para mantener el inventario sincronizado)
-            if ($sessionId) {
-                $session = NightSession::find($sessionId);
-                if ($session) {
-                    $dateStr = Carbon::parse($session->session_date)->format('Y-m-d');
-                    $nextSession = NightSession::where('id', '!=', $session->id)
-                        ->whereDate('session_date', '>', $dateStr)
-                        ->orderBy('session_date')
-                        ->first() ?? NightSession::where('id', '>', $session->id)->orderBy('id')->first();
-
-                    if ($nextSession) {
-                        $nextSales = BarSale::with('product')
-                            ->where('night_session_id', $nextSession->id)
-                            ->where('bar_name', $barName)
-                            ->get();
-
-                        foreach ($nextSales as $nextSale) {
-                            if (! $nextSale->product) {
-                                continue;
-                            }
-                            $curSale = BarSale::where('night_session_id', $session->id)
-                                ->where('bar_name', $barName)
-                                ->where('product_id', $nextSale->product_id)
-                                ->first();
-
-                            $curSaldo = $curSale ? (int) $curSale->saldo : 0;
-                            $unitsPerPkg = $nextSale->product->units_per_package > 0 ? (int) $nextSale->product->units_per_package : 1;
-
-                            $nextInitPkg = intdiv($curSaldo, $unitsPerPkg);
-                            $nextInitUnits = $curSaldo % $unitsPerPkg;
-
-                            $nextSale->initial_packages = $nextInitPkg;
-                            $nextSale->initial_units = $nextInitUnits;
-
-                            $totNightPkg = $nextInitPkg + (int) $nextSale->added_packages + (int) $nextSale->night_packages;
-                            $totNightUnits = $nextInitUnits + (int) $nextSale->added_units + (int) $nextSale->night_units;
-                            $totNightBot = ($totNightPkg * $unitsPerPkg) + $totNightUnits;
-
-                            $nextSale->packages = $totNightPkg;
-                            $nextSale->units = $totNightUnits;
-                            $nextSale->total_initial = $totNightBot;
-
-                            // Saldo Cierre de la siguiente noche se mantiene en 0 por defecto
-                            $nextSale->saldo = (int) ($nextSale->saldo ?? 0);
-                            $nextSale->vendido = max(0, $totNightBot - (int) $nextSale->saldo);
-
-                            $this->syncProductStock($nextSale);
-
-                            if ($nextSale->product->category !== 'Mixers') {
-                                $nextSale->subtotal = $nextSale->vendido * (float) $nextSale->unit_price;
-                            }
-
-                            $nextSale->save();
-                        }
-                    }
-                }
-            }
-        }
+        $barName = $this->normalizeBarName($request->input('bar_name', 'Barra Principal'));
 
         if ($sessionId) {
-            $session = NightSession::find($sessionId);
-            if ($session) {
-                $closing = CashClosing::firstOrCreate(['night_session_id' => $session->id]);
-                if ($request->has('guardarropa_amount')) {
-                    $closing->total_guardarropa = (float) $request->input('guardarropa_amount', 0);
-                }
-                if ($request->has('snacks_amount')) {
-                    $closing->total_snacks = (float) $request->input('snacks_amount', 0);
-                }
-                $closing->save();
-                $this->sessionService->recalculateClosing($session);
+            $sales = BarSale::with('product')
+                ->where('night_session_id', $sessionId)
+                ->where('bar_name', $barName)
+                ->whereHas('product')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($barName === 'Tienda') {
+                $this->updateStoreSales($sales, $rows, $mapping);
+            } else {
+                $this->updateBarSales($sales, $rows, $mapping);
+                $this->propagateNextSessionInventory($sessionId, $barName);
             }
         }
+
+        $this->updateClosingAmounts($request, $sessionId);
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -681,12 +421,218 @@ class BarSaleController extends Controller
         ])->with('success', 'Ventas de '.$barName.' guardadas correctamente.');
     }
 
-    private function syncProductStock(BarSale $barSale): void
+    /**
+     * @param  Collection<int, BarSale>  $sales
+     * @param  array<array-key, array<string, mixed>>  $rows
+     * @param  array<int, array{mixer_id: int, ratio?: int}>  $mapping
+     */
+    private function updateStoreSales(Collection $sales, array $rows, array $mapping): void
     {
-        if (! $barSale->product) {
+        foreach ($rows as $id => $data) {
+            $barSale = $sales->get((int) $id);
+            if (! $barSale) {
+                continue;
+            }
+
+            $this->applySelectedSpecialMixers($barSale, $data);
+            $barSale->vendido = max(0, (int) ($data['vendido'] ?? 0));
+            $barSale->unit_price = $this->resolveUnitPrice($data['unit_price'] ?? null, $barSale);
+            if ($barSale->product->category !== 'Mixers') {
+                $barSale->packages = 0;
+                $barSale->units = 0;
+                $barSale->total_initial = $barSale->vendido;
+                $barSale->saldo = 0;
+                $barSale->subtotal = (int) $barSale->vendido * (float) $barSale->unit_price;
+                $this->syncProductStock($barSale);
+                $barSale->save();
+            }
+        }
+
+        $this->recalculateMixerSubtotals($sales, $mapping, true);
+    }
+
+    /**
+     * @param  Collection<int, BarSale>  $sales
+     * @param  array<array-key, array<string, mixed>>  $rows
+     * @param  array<int, array{mixer_id: int, ratio?: int}>  $mapping
+     */
+    private function updateBarSales(Collection $sales, array $rows, array $mapping): void
+    {
+        foreach ($rows as $id => $data) {
+            $barSale = $sales->get((int) $id);
+            if (! $barSale) {
+                continue;
+            }
+
+            $this->applySelectedSpecialMixers($barSale, $data);
+            $packages = (int) ($data['packages'] ?? 0);
+            $units = (int) ($data['units'] ?? 0);
+            $saldo = (int) ($data['saldo'] ?? 0);
+            $unitPrice = $this->resolveUnitPrice($data['unit_price'] ?? null, $barSale);
+            $unitsPerPackage = max(1, (int) $barSale->product->units_per_package);
+            $totalInitial = ($packages * $unitsPerPackage) + $units;
+
+            $barSale->packages = $packages;
+            $barSale->units = $units;
+            $barSale->total_initial = $totalInitial;
+            $barSale->saldo = $saldo;
+            $barSale->vendido = max(0, $totalInitial - $saldo);
+            $barSale->unit_price = $unitPrice;
+            $this->syncProductStock($barSale);
+            if ($barSale->product->category !== 'Mixers') {
+                $barSale->subtotal = (int) $barSale->vendido * $unitPrice;
+                $barSale->save();
+            }
+        }
+
+        $this->recalculateMixerSubtotals($sales, $mapping, false);
+    }
+
+    /**
+     * @param  Collection<int, BarSale>  $sales
+     * @param  array<int, array{mixer_id: int, ratio?: int}>  $mapping
+     */
+    private function recalculateMixerSubtotals(Collection $sales, array $mapping, bool $isStore): void
+    {
+        $liquorSales = $sales->filter(fn (BarSale $sale): bool => $sale->product->category !== 'Mixers');
+        $combosPerMixer = $this->calculationService->calculateIncludedMixers($liquorSales, $mapping);
+
+        foreach ($sales as $sale) {
+            if ($sale->product->category !== 'Mixers') {
+                continue;
+            }
+
+            $included = $combosPerMixer[$sale->product_id] ?? 0;
+            if ($isStore) {
+                $sale->vendido = max((int) $sale->vendido, $included);
+                $sale->total_initial = $sale->vendido;
+                $sale->saldo = 0;
+                $sale->packages = 0;
+                $sale->units = 0;
+                $this->syncProductStock($sale);
+            }
+            $extras = max(0, (int) $sale->vendido - $included);
+            $sale->subtotal = $extras * (float) $sale->unit_price;
+            $sale->save();
+        }
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $data
+     */
+    private function applySelectedSpecialMixers(BarSale $barSale, array $data): void
+    {
+        if (! array_key_exists('selected_special_mixer', $data)) {
             return;
         }
 
+        $specialMixers = $data['selected_special_mixer'];
+        $barSale->selected_special_mixer = is_array($specialMixers)
+            ? json_encode($specialMixers)
+            : $specialMixers;
+    }
+
+    private function resolveUnitPrice(mixed $requestedPrice, BarSale $barSale): float
+    {
+        if (is_numeric($requestedPrice)) {
+            return (float) $requestedPrice;
+        }
+
+        return (float) $barSale->unit_price;
+    }
+
+    private function propagateNextSessionInventory(int $sessionId, string $barName): void
+    {
+        $session = NightSession::query()->lockForUpdate()->find($sessionId);
+        if (! $session) {
+            return;
+        }
+
+        $dateStr = Carbon::parse($session->session_date)->format('Y-m-d');
+        $nextSession = NightSession::where('id', '!=', $session->id)
+            ->whereDate('session_date', '>', $dateStr)
+            ->orderBy('session_date')
+            ->lockForUpdate()
+            ->first() ?? NightSession::where('id', '>', $session->id)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->first();
+
+        if (! $nextSession) {
+            return;
+        }
+
+        $nextSales = BarSale::with('product')
+            ->where('night_session_id', $nextSession->id)
+            ->where('bar_name', $barName)
+            ->whereHas('product')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($nextSales as $nextSale) {
+            $currentSale = BarSale::where('night_session_id', $session->id)
+                ->where('bar_name', $barName)
+                ->where('product_id', $nextSale->product_id)
+                ->lockForUpdate()
+                ->first();
+            $currentBalance = $currentSale ? (int) $currentSale->saldo : 0;
+            $unitsPerPackage = max(1, (int) $nextSale->product->units_per_package);
+            $initialPackages = intdiv($currentBalance, $unitsPerPackage);
+            $initialUnits = $currentBalance % $unitsPerPackage;
+            $totalPackages = $initialPackages + (int) $nextSale->added_packages + (int) $nextSale->night_packages;
+            $totalUnits = $initialUnits + (int) $nextSale->added_units + (int) $nextSale->night_units;
+            $totalInitial = ($totalPackages * $unitsPerPackage) + $totalUnits;
+
+            $nextSale->initial_packages = $initialPackages;
+            $nextSale->initial_units = $initialUnits;
+            $nextSale->packages = $totalPackages;
+            $nextSale->units = $totalUnits;
+            $nextSale->total_initial = $totalInitial;
+            $nextSale->vendido = max(0, $totalInitial - (int) $nextSale->saldo);
+            $this->syncProductStock($nextSale);
+
+            if ($nextSale->product->category !== 'Mixers') {
+                $nextSale->subtotal = (int) $nextSale->vendido * (float) $nextSale->unit_price;
+            }
+            $nextSale->save();
+        }
+    }
+
+    private function updateClosingAmounts(Request $request, ?int $sessionId): void
+    {
+        if (! $sessionId) {
+            return;
+        }
+
+        $session = NightSession::query()->lockForUpdate()->find($sessionId);
+        if (! $session) {
+            return;
+        }
+
+        $closing = CashClosing::where('night_session_id', $session->id)
+            ->lockForUpdate()
+            ->first() ?? CashClosing::firstOrCreate(['night_session_id' => $session->id]);
+
+        if ($request->has('guardarropa_amount')) {
+            $closing->total_guardarropa = (float) $request->input('guardarropa_amount', 0);
+        }
+        if ($request->has('snacks_amount')) {
+            $closing->total_snacks = (float) $request->input('snacks_amount', 0);
+        }
+
+        $closing->save();
+        $this->sessionService->recalculateClosing($session);
+    }
+
+    private function syncProductStock(BarSale $barSale): void
+    {
+        $product = Product::query()->lockForUpdate()->find($barSale->product_id);
+        if (! $product) {
+            return;
+        }
+
+        $barSale->setRelation('product', $product);
         $previouslySynced = (int) $barSale->stock_synced_vendido;
         $currentSold = max(0, (int) $barSale->vendido);
         $difference = $currentSold - $previouslySynced;

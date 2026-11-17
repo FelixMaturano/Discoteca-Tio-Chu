@@ -170,14 +170,16 @@
                         </svg>
                     </a>
 
-                    <form method="POST" action="{{ route('sessions.destroy', $s) }}" class="inline" 
-                          onsubmit="return confirm('¿Estás seguro de eliminar esta noche del {{ \Carbon\Carbon::parse($s->session_date)->format('d/m/Y') }}? Se borrarán sus inventarios, facturas y cobros asociados.');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="px-3 py-2.5 text-xs text-rose-400 active:bg-rose-500/20 font-semibold rounded-xl bg-rose-500/10 border border-rose-500/20 transition-all cursor-pointer">
-                            Eliminar
-                        </button>
-                    </form>
+                    @if($isOpen && auth()->user()->isAdmin())
+                        <form method="POST" action="{{ route('sessions.destroy', $s) }}" class="inline"
+                              onsubmit="return confirm('¿Estás seguro de eliminar esta noche del {{ \Carbon\Carbon::parse($s->session_date)->format('d/m/Y') }}? Se borrarán sus inventarios, facturas y cobros asociados.');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="px-3 py-2.5 text-xs text-rose-400 active:bg-rose-500/20 font-semibold rounded-xl bg-rose-500/10 border border-rose-500/20 transition-all cursor-pointer">
+                                Eliminar
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         @empty
@@ -282,14 +284,16 @@
                                     </svg>
                                 </a>
 
-                                <form method="POST" action="{{ route('sessions.destroy', $s) }}" class="inline" 
-                                      onsubmit="return confirm('¿Estás seguro de eliminar esta noche del {{ \Carbon\Carbon::parse($s->session_date)->format('d/m/Y') }}? Se borrarán sus inventarios, facturas y cobros asociados.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="px-2.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 font-semibold rounded-lg hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer">
-                                        Eliminar
-                                    </button>
-                                </form>
+                                @if($isOpen && auth()->user()->isAdmin())
+                                    <form method="POST" action="{{ route('sessions.destroy', $s) }}" class="inline"
+                                          onsubmit="return confirm('¿Estás seguro de eliminar esta noche del {{ \Carbon\Carbon::parse($s->session_date)->format('d/m/Y') }}? Se borrarán sus inventarios, facturas y cobros asociados.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="px-2.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 font-semibold rounded-lg hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer">
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @empty

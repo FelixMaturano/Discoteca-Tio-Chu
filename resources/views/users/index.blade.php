@@ -119,10 +119,10 @@
                 </div>
 
                 <div class="flex items-center justify-between text-[11px] text-zinc-500 font-mono pt-2 border-t border-zinc-800/60">
-                    <span>{{ $u->created_at ? $u->created_at->format('d/m/Y') : 'Inicial' }}</span>
+                    <span>{{ \App\Models\User::ROLE_LABELS[$u->role] ?? $u->role }} · {{ $u->created_at ? $u->created_at->format('d/m/Y') : 'Inicial' }}</span>
                     <div class="flex items-center gap-1.5">
                         <button type="button" 
-                                onclick="openEditUserDrawer({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->email) }}')"
+                                onclick="openEditUserDrawer({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->email) }}', '{{ $u->role }}')"
                                 class="px-3 py-1.5 rounded-lg bg-zinc-900 active:bg-zinc-800 border border-zinc-800 text-zinc-300 active:text-white text-xs font-semibold transition-all cursor-pointer">
                             Editar
                         </button>
@@ -169,6 +169,7 @@
                         <th class="px-4 py-3 w-12 text-center">#</th>
                         <th class="px-4 py-3">Usuario</th>
                         <th class="px-4 py-3">Correo Electrónico (Login)</th>
+                        <th class="px-4 py-3">Rol</th>
                         <th class="px-4 py-3">Fecha de Registro</th>
                         <th class="px-4 py-3 text-right">Acciones</th>
                     </tr>
@@ -209,6 +210,10 @@
                                 <span class="text-zinc-300 font-mono text-xs">{{ $u->email }}</span>
                             </td>
 
+                            <td class="px-4 py-3 text-zinc-300">
+                                {{ \App\Models\User::ROLE_LABELS[$u->role] ?? $u->role }}
+                            </td>
+
                             <td class="px-4 py-3 text-zinc-400">
                                 {{ $u->created_at ? $u->created_at->format('d/m/Y H:i') : 'Inicial' }}
                             </td>
@@ -217,7 +222,7 @@
                                 <div class="inline-flex items-center gap-1.5">
                                     <!-- Botón Editar -->
                                     <button type="button" 
-                                            onclick="openEditUserDrawer({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->email) }}')"
+                                            onclick="openEditUserDrawer({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->email) }}', '{{ $u->role }}')"
                                             class="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold transition-all cursor-pointer">
                                         Editar
                                     </button>
@@ -244,7 +249,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-4 py-8 text-center text-zinc-500 text-xs">
+                            <td colspan="6" class="px-4 py-8 text-center text-zinc-500 text-xs">
                                 No se encontraron cuentas registradas.
                             </td>
                         </tr>
@@ -312,6 +317,15 @@
             </div>
         </div>
 
+        <div>
+            <label for="create_role" class="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">Rol *</label>
+            <select name="role" id="create_role" required class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-950 border border-zinc-800 text-white focus:outline-none focus:border-[#F5B81C] transition-all">
+                @foreach(\App\Models\User::ROLE_LABELS as $role => $label)
+                    <option value="{{ $role }}" {{ $role === 'bartender' ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+
         <div class="pt-4 border-t border-zinc-800/80 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
             <button type="button" onclick="closeCreateUserDrawer()" 
                     class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition-all cursor-pointer">
@@ -363,6 +377,15 @@
             </label>
             <input type="email" name="email" id="edit_email" required
                    class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-950 border border-zinc-800 text-white focus:outline-none focus:border-[#F5B81C] transition-all font-mono">
+        </div>
+
+        <div>
+            <label for="edit_role" class="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1.5">Rol *</label>
+            <select name="role" id="edit_role" required class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-950 border border-zinc-800 text-white focus:outline-none focus:border-[#F5B81C] transition-all">
+                @foreach(\App\Models\User::ROLE_LABELS as $role => $label)
+                    <option value="{{ $role }}">{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
 
         <!-- Nueva Contraseña (Opcional) -->
@@ -418,7 +441,7 @@
         }
     }
 
-    function openEditUserDrawer(id, name, email) {
+    function openEditUserDrawer(id, name, email, role) {
         const overlay = document.getElementById('drawer-edit-user-overlay');
         const drawer = document.getElementById('drawer-edit-user');
         const form = document.getElementById('edit-user-form');
@@ -426,6 +449,7 @@
             form.action = `/users/${id}`;
             document.getElementById('edit_name').value = name;
             document.getElementById('edit_email').value = email;
+            document.getElementById('edit_role').value = role;
             document.getElementById('edit_password').value = '';
 
             overlay.classList.add('is-open');

@@ -9,6 +9,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $id
+ * @property Carbon|null $session_date
+ * @property string $day_name
+ * @property string $status
+ * @property string $pos_commission_rate
+ * @property string $opening_cash
+ */
 class NightSession extends Model
 {
     use HasFactory;
@@ -50,41 +58,49 @@ class NightSession extends Model
         );
     }
 
+    /** @return HasMany<StaffAttendance, $this> */
     public function staffAttendances(): HasMany
     {
         return $this->hasMany(StaffAttendance::class);
     }
 
+    /** @return HasMany<BarSale, $this> */
     public function barSales(): HasMany
     {
         return $this->hasMany(BarSale::class);
     }
 
+    /** @return HasMany<Invoice, $this> */
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
     }
 
+    /** @return HasMany<QrPayment, $this> */
     public function qrPayments(): HasMany
     {
         return $this->hasMany(QrPayment::class);
     }
 
+    /** @return HasMany<StoreSale, $this> */
     public function storeSales(): HasMany
     {
         return $this->hasMany(StoreSale::class);
     }
 
+    /** @return HasMany<Expense, $this> */
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
     }
 
+    /** @return HasMany<BeerPayment, $this> */
     public function beerPayments(): HasMany
     {
         return $this->hasMany(BeerPayment::class);
     }
 
+    /** @return HasOne<CashClosing, $this> */
     public function cashClosing(): HasOne
     {
         return $this->hasOne(CashClosing::class);

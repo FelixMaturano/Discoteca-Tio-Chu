@@ -6,6 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $night_session_id
+ * @property int $product_id
+ * @property int $vendido
+ * @property int|null $included_in_combos
+ * @property int|null $extras
+ * @property numeric-string|float $unit_price
+ * @property numeric-string|float $subtotal
+ * @property-read Product|null $product
+ */
 class BarSale extends Model
 {
     use HasFactory;
@@ -48,11 +59,13 @@ class BarSale extends Model
         'stock_synced_vendido' => 'integer',
     ];
 
+    /** @return BelongsTo<NightSession, $this> */
     public function nightSession(): BelongsTo
     {
         return $this->belongsTo(NightSession::class);
     }
 
+    /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
@@ -63,7 +76,7 @@ class BarSale extends Model
      */
     public function calculateTotals(): void
     {
-        $unitsPerPkg = (int) ($this->product?->units_per_package ?? 1);
+        $unitsPerPkg = (int) ($this->product->units_per_package ?? 1);
         if ($unitsPerPkg < 1) {
             $unitsPerPkg = 1;
         }

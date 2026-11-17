@@ -71,5 +71,25 @@ class SecurityTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('X-XSS-Protection', '1; mode=block');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('Content-Security-Policy');
+        $this->assertStringContainsString("'unsafe-inline'", $response->headers->get('Content-Security-Policy'));
+        $response->assertHeaderMissing('Strict-Transport-Security');
+    }
+
+    public function test_hsts_is_only_sent_for_https_requests(): void
+    {
+        $response = $this->get('https://localhost/login');
+
+        $response->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+
+    public function test_forwarded_https_from_untrusted_proxy_does_not_enable_hsts(): void
+    {
+        $response = $this->get('http://localhost/login', [
+            'X-Forwarded-Proto' => 'https',
+        ]);
+
+        $response->assertOk();
+        $response->assertHeaderMissing('Strict-Transport-Security');
     }
 }

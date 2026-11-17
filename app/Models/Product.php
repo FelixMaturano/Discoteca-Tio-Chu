@@ -6,6 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $category
+ * @property string $sale_price
+ * @property int $units_per_package
+ * @property int $stock_warehouse
+ * @property int $stock_packages
+ * @property int $stock_units
+ * @property bool $is_active
+ */
 class Product extends Model
 {
     use HasFactory;
@@ -34,11 +45,13 @@ class Product extends Model
         'is_active' => 'boolean',
     ];
 
+    /** @return HasMany<BarSale, $this> */
     public function barSales(): HasMany
     {
         return $this->hasMany(BarSale::class);
     }
 
+    /** @return HasMany<ProductStockMovement, $this> */
     public function stockMovements(): HasMany
     {
         return $this->hasMany(ProductStockMovement::class);

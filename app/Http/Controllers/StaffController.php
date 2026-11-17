@@ -7,6 +7,8 @@ use App\Models\Staff;
 use App\Models\StaffAttendance;
 use App\Services\NightSessionService;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class StaffController extends Controller
 {
@@ -43,14 +45,10 @@ class StaffController extends Controller
         } elseif ($isExtraDay && $currentDay === $sessionDayNorm) {
             // Noche extraordinaria activa (ej: Jueves):
             // Si la noche no tiene asistencias aún, la lista inicia vacía (0 seleccionados) como solicitó Don Ludo
-            if ($activeSession) {
-                $attendances = StaffAttendance::with('staff')
-                    ->where('night_session_id', $activeSession->id)
-                    ->get();
-                $staffMembers = $attendances->map(fn ($att) => $att->staff)->filter()->values();
-            } else {
-                $staffMembers = collect();
-            }
+            $attendances = StaffAttendance::with('staff')
+                ->where('night_session_id', $activeSession->id)
+                ->get();
+            $staffMembers = $attendances->map(fn ($att) => $att->staff)->filter()->values();
         } elseif ($currentDay === 'viernes') {
             if ($activeSession && $this->normalizeDay($activeSession->day_name) === 'viernes' && $activeSession->staffAttendances()->exists()) {
                 $attendances = StaffAttendance::with('staff')->where('night_session_id', $activeSession->id)->get();
@@ -88,6 +86,10 @@ class StaffController extends Controller
 
             return $rankA <=> $rankB;
         })->values();
+        $staffTotalCount = $staffMembers->count();
+        $staffRoleCounts = $staffMembers->countBy(fn (Staff $staff): string => $staff->getRoleCategory());
+        $staffRankCounts = $staffMembers->countBy(fn (Staff $staff): int => $staff->getRoleCategoryRank());
+        $staffMembers = $this->paginateStaffMembers($staffMembers, $request, 'staff_page', 10);
 
         // Conteos para pestañas
         $countViernes = ($activeSession && $this->normalizeDay($activeSession->day_name) === 'viernes' && $activeSession->staffAttendances()->exists())
@@ -107,7 +109,7 @@ class StaffController extends Controller
         // Datos para noche extraordinaria
         $extraDayName = $isExtraDay ? $sessionDayRaw : null;
         $extraDayKey = $isExtraDay ? $sessionDayNorm : null;
-        $countExtra = ($isExtraDay && $activeSession) ? $activeSession->staffAttendances()->count() : 0;
+        $countExtra = $isExtraDay ? $activeSession->staffAttendances()->count() : 0;
 
         // Lista completa de todo el personal activo ordenado por rol para el modal de turno
         $allActiveStaff = Staff::where('is_active', true)
@@ -121,6 +123,12 @@ class StaffController extends Controller
 
                 return $rankA <=> $rankB;
             })->values();
+        $allActiveStaffCount = $allActiveStaff->count();
+        $allActiveStaffRoleCounts = $allActiveStaff->countBy(fn (Staff $staff): string => $staff->getRoleCategory());
+        $staffPayById = $allActiveStaff->mapWithKeys(fn (Staff $staff): array => [
+            $staff->id => (float) ($activeSession ? $staff->getPayForDay($activeSession->day_name) : $staff->default_pay),
+        ]);
+        $allActiveStaff = $this->paginateStaffMembers($allActiveStaff, $request, 'modal_page', 10);
 
         $currentSessionStaffIds = $activeSession
             ? StaffAttendance::where('night_session_id', $activeSession->id)->pluck('staff_id')->toArray()
@@ -128,6 +136,9 @@ class StaffController extends Controller
 
         return view('staff.index', compact(
             'staffMembers',
+            'staffTotalCount',
+            'staffRoleCounts',
+            'staffRankCounts',
             'currentDay',
             'countViernes',
             'countSabado',
@@ -139,8 +150,36 @@ class StaffController extends Controller
             'extraDayKey',
             'countExtra',
             'allActiveStaff',
+            'allActiveStaffCount',
+            'allActiveStaffRoleCounts',
+            'staffPayById',
             'currentSessionStaffIds'
         ));
+    }
+
+    /**
+     * @param  Collection<int, Staff>  $staffMembers
+     * @return LengthAwarePaginator<Staff>
+     */
+    private function paginateStaffMembers(
+        Collection $staffMembers,
+        Request $request,
+        string $pageName = 'staff_page',
+        int $perPage = 25
+    ): LengthAwarePaginator {
+        $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
+
+        return new LengthAwarePaginator(
+            $staffMembers->forPage($currentPage, $perPage)->values(),
+            $staffMembers->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+                'pageName' => $pageName,
+            ]
+        );
     }
 
     /**

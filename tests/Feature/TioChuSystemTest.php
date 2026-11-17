@@ -502,7 +502,7 @@ class TioChuSystemTest extends TestCase
         $ginger = Product::find(23); // Ginger Ale 2.0L (acompañamiento de Singani)
         $ginger->update(['stock_warehouse' => 20]);
 
-        $sprite = Product::find(15); // Sprite 2.0L (mixer especial)
+        $sprite = Product::find(27); // Sprite 2.0L (mixer especial)
         $sprite->update(['stock_warehouse' => 10]);
 
         // Asegurar que existen BarSale para Tienda
@@ -618,7 +618,6 @@ class TioChuSystemTest extends TestCase
         ]);
 
         $responseSpecial->assertSessionHas('success');
-
         // Sprite debe tener subtotal 0 (cubierto por el combo especial)
         $this->assertDatabaseHas('bar_sales', [
             'id' => $spriteSale->id,

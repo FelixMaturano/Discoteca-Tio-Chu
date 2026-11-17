@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'ngrok' => [
+        'authtoken' => env('NGROK_AUTHTOKEN'),
+        'port' => env('NGROK_PORT', 8000),
+    ],
+
 ];

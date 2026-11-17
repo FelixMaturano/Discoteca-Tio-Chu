@@ -24,6 +24,7 @@ class QrPayment extends Model
         'is_confirmed' => 'boolean',
     ];
 
+    /** @return BelongsTo<NightSession, $this> */
     public function nightSession(): BelongsTo
     {
         return $this->belongsTo(NightSession::class);

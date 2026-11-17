@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $night_session_id
+ * @property string|null $reported_cash
+ */
 class CashClosing extends Model
 {
     use HasFactory;
@@ -46,6 +51,7 @@ class CashClosing extends Model
         'closed_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<NightSession, $this> */
     public function nightSession(): BelongsTo
     {
         return $this->belongsTo(NightSession::class);
