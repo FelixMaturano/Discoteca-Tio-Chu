@@ -9,10 +9,13 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 const port = 8017;
 const baseUrl = `http://127.0.0.1:${port}`;
 const databasePath = resolve(projectRoot, 'storage/framework/testing/cypress.sqlite');
+const adminEmail = process.env.CYPRESS_ADMIN_EMAIL || 'DonLudo@gmail.com';
+const adminPassword = process.env.CYPRESS_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'tiochu123';
 const testEnvironment = {
     ...process.env,
     APP_ENV: 'testing',
     APP_URL: baseUrl,
+    ADMIN_PASSWORD: adminPassword,
     DB_CONNECTION: 'sqlite',
     DB_DATABASE: databasePath,
     SESSION_DRIVER: 'file',
@@ -109,6 +112,12 @@ prepareTestDatabase();
 process.on('exit', stopLaravel);
 
 export default {
+    env: {
+        adminPassword,
+    },
+    expose: {
+        adminEmail,
+    },
     e2e: {
         baseUrl,
         specPattern: 'cypress/e2e/**/*.cy.js',

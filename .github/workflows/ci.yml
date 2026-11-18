@@ -49,6 +49,9 @@ jobs:
     name: Pruebas E2E (Cypress)
     needs: phpunit-tests
     runs-on: ubuntu-latest
+    env:
+      CYPRESS_ADMIN_EMAIL: DonLudo@gmail.com
+      CYPRESS_ADMIN_PASSWORD: ${{ secrets.CYPRESS_ADMIN_PASSWORD || 'tiochu123' }}
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -63,6 +66,4 @@ jobs:
       - run: |
           cp .env.example .env
           php artisan key:generate
-      - run: |
-          php artisan serve --port=8000 &
-          npx cypress run
+      - run: npx cypress run
