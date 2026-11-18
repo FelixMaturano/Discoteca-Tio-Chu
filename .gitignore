@@ -21,6 +21,12 @@ ngrok.exe
 /public/storage
 /storage/*.key
 /storage/pail
+# Generated JMeter reports and editor/runtime temporary files.
+/jmeter/reporte_html/
+*.tmp
+*.temp
+*.swp
+*~
 /vendor
 Homestead.json
 Homestead.yaml

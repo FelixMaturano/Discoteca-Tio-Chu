@@ -13,12 +13,14 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        $adminPassword = Hash::make(config('app.admin_password') ?: 'tiochu123');
+
         // Correo oficial corregido
         User::updateOrCreate(
             ['email' => 'DonLudo@gmail.com'],
             [
                 'name' => 'Don Ludo',
-                'password' => Hash::make('tiochu123'),
+                'password' => $adminPassword,
                 'role' => 'admin',
             ]
         );
@@ -28,7 +30,7 @@ class UserSeeder extends Seeder
             ['email' => 'DonLudo@gmail.chu'],
             [
                 'name' => 'Don Ludo',
-                'password' => Hash::make('tiochu123'),
+                'password' => $adminPassword,
                 'role' => 'admin',
             ]
         );

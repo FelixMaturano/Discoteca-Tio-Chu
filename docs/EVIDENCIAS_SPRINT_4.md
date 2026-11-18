@@ -1,4 +1,7 @@
 # INFORME DE EVIDENCIAS DE CALIDAD Y PRUEBAS — SPRINT 4
+
+> **Nota de vigencia:** este informe conserva el snapshot histórico de 04-11-2026. Las cifras de regresión, cobertura y carga que gobiernan el cierre de auditoría del 17-11-2026 están consolidadas en [SQAP Maestro General v4.0](./SQAP-Maestro-General-v4.0.md); no compare los resultados históricos de este archivo como si fueran la ejecución actual.
+
 **Discoteca Tío Chu — Sistema Web de Gestión Nocturna y Cuadre de Caja**  
 **Universidad Mayor, Real y Pontificia de San Francisco Xavier de Chuquisaca (USFX)**  
 **Facultad de Tecnología — Carrera de Ciencias de la Computación**  

@@ -1,4 +1,7 @@
 # Plan de Aseguramiento de Calidad de Software (SQAP v4.0)
+
+> **Estado documental:** este es el plan específico original del Sprint 4. Para criterios y métricas consolidados al cierre de auditoría del 17-11-2026, consulte el [SQAP Maestro General v4.0](./SQAP-Maestro-General-v4.0.md).
+
 ## Sistema de Gestión Nocturna “Discoteca Tío Chu”
 ### Sprint 4 — Balance final, arqueo y dashboard
 
